@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Data.Entities;
+﻿namespace Data.Entities;
 
 public partial class Asset
 {
@@ -18,6 +15,10 @@ public partial class Asset
     public int GalleryId { get; set; }
 
     public string MimeType { get; set; } = null!;
+
+    public string Hash { get; set; } = null!;
+
+    public virtual ICollection<Gallery> Galleries { get; set; } = new List<Gallery>();
 
     public virtual Gallery Gallery { get; set; } = null!;
 

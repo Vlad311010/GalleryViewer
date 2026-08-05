@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace Data.Entities;
 
@@ -37,6 +35,8 @@ public partial class AssetsCatalogContext : DbContext
         {
             entity.ToTable("Asset");
 
+            entity.HasIndex(e => e.Hash, "Asset_Hash_IDX");
+
             entity.HasOne(d => d.Gallery).WithMany(p => p.Assets).HasForeignKey(d => d.GalleryId);
 
             entity.HasOne(d => d.Group).WithMany(p => p.Assets).HasForeignKey(d => d.GroupId);
@@ -53,6 +53,11 @@ public partial class AssetsCatalogContext : DbContext
             entity.HasOne(d => d.Asset).WithMany().HasForeignKey(d => d.AssetId);
 
             entity.HasOne(d => d.Tag).WithMany().HasForeignKey(d => d.TagId);
+        });
+
+        modelBuilder.Entity<Gallery>(entity =>
+        {
+            entity.HasOne(d => d.CoverSource).WithMany(p => p.Galleries).HasForeignKey(d => d.CoverSourceId);
         });
 
         modelBuilder.Entity<Tag>(entity =>

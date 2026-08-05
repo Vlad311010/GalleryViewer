@@ -1,6 +1,7 @@
 ﻿using App.Dto;
 using App.Extensions;
 using Data.Entities;
+using System.Security.Cryptography;
 
 namespace App
 {
@@ -8,11 +9,19 @@ namespace App
     {
         public async Task<AssetDto> AddAssetAsync(AssetDtoCreate dto)
         {
+            Gallery? targetGallery = context.Galleries.SingleOrDefault(x => x.Id == dto.GalleryId);
+            if (targetGallery == null)
+            {
+                throw new ArgumentException("TODO: custom exception");
+            }
+
+            string hash = await ComputeMd5HashAsync(Path.Combine(targetGallery.Path, dto.RelativePath));
             Asset entity = new Asset
             {
                 GalleryId = dto.GalleryId,
                 RelativePath = dto.RelativePath,
-                MimeType = dto.RelativePath.ToMimeType()
+                MimeType = dto.RelativePath.ToMimeType(),
+                Hash = hash
             };
 
             entity = (await context.Assets.AddAsync(entity)).Entity;
@@ -44,10 +53,6 @@ namespace App
             context.AssetGroups.Add(entity);
             entity = (await context.AssetGroups.AddAsync(entity)).Entity;
 
-            /*foreach (var assetId in assets)
-            {
-                context.Attach(new Asset { Id = assetId, Group = entity });
-            }*/
 
             for (int i = 0; i < assets.Count(); i++)
             {
@@ -62,11 +67,18 @@ namespace App
 
                 await context.Assets.AddAsync(assetEntity);
             }
-            /*context.AttachRange(
-                assets.Select(assetId => new Asset { Id = assetId, Group = entity })
-            );*/
 
             return new AssetGroupDto(entity.Id, entity.CoverAssetIdx, entity.Title);
+        }
+
+        private async Task<string> ComputeMd5HashAsync(string filePath) // TODO: extract to helper
+        {
+            using var md5 = MD5.Create();
+            await using var stream = File.OpenRead(filePath);
+
+            byte[] hash = await md5.ComputeHashAsync(stream);
+
+            return Convert.ToHexString(hash).ToLowerInvariant();
         }
     }
 }
