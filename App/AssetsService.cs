@@ -1,13 +1,14 @@
 ﻿using App.Dto;
 using App.Extensions;
+using App.PreviewCreation;
 using Data.Entities;
 using System.Security.Cryptography;
 
 namespace App
 {
-    public class AssetsService(AssetsCatalogContext context)
+    public class AssetsService(AssetsCatalogContext context, PreviewCreatorService previewCreation)
     {
-        private async Task<Asset> CreateAssetWithoutGroupAsync(AssetDtoCreate dto)
+        private async Task<Asset> CreateAssetWithoutGroupAsync(AssetDtoCreate dto, bool createPreview = true)
         {
             Gallery? targetGallery = context.Galleries.SingleOrDefault(x => x.Id == dto.GalleryId);
             if (targetGallery == null)
@@ -27,8 +28,14 @@ namespace App
             DateTime modifiedTime = File.GetLastWriteTimeUtc(assetFilePath);
             creationTime = creationTime > modifiedTime ? modifiedTime : creationTime;
             DateTime currentTime = DateTime.UtcNow;
-
             string hash = await ComputeMd5HashAsync(assetFilePath);
+            string? previewPath = null;
+
+            if (createPreview)
+            {
+                previewPath = await previewCreation.CreatePreviewAsync(targetGallery.Path, Path.Combine(assetFilePath));
+            }
+
             return new Asset
             {
                 GalleryId = dto.GalleryId,
@@ -36,7 +43,8 @@ namespace App
                 MimeType = dto.RelativePath.ToMimeType(),
                 Hash = hash,
                 CreationTime = creationTime,
-                ImportTime = currentTime
+                ImportTime = currentTime,
+                PreviewPath = previewPath
             };
         }
 

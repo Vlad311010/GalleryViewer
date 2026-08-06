@@ -1,4 +1,4 @@
-﻿namespace App
+﻿namespace App.Settings
 {
     internal static class AppSettings
     {

@@ -1,4 +1,6 @@
 using App;
+using App.PreviewCreation;
+using App.Settings;
 using Data.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,15 +8,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+// Settings
+builder.Services.Configure<PreviewSettings>(
+    builder.Configuration.GetSection(PreviewSettings.SectionName));
 
 // DB
 builder.Services.AddDbContext<AssetsCatalogContext>();
 
-// Data Services
+// Services
 builder.Services.AddTransient<FilterService>();
+builder.Services.AddTransient<PreviewCreatorService>();
 
-/*builder.Services.Configure<AppSettings>(
-    builder.Configuration.GetSection(AppSettings.SectionName));*/
 
 var app = builder.Build();
 

@@ -3,8 +3,6 @@
     public record GalleryDto(
         int Id,
         string Name,
-        string Path,
-        DateTime CreationTime,
-        DateTime ImportTime
+        string Path
     ) : EntityDto(Id);
 }

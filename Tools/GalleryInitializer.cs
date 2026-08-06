@@ -61,7 +61,8 @@ namespace Tools
         {
             string root = @$"{data.Path}";
 
-            var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm" };
+            // var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm" };
+            var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
 
             SearchOption searchOption = data.groupSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
