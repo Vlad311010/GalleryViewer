@@ -51,9 +51,9 @@ AssetsService imagesService = new AssetsService(context, previewCreatorService);
 PersistenceService persistance = new PersistenceService(context);
 var initializer = new GalleryInitializer(galleriesService, imagesService, persistance);
 
-var data = new InicializationData("Test", @"F:\_saves\imgTest");
+var data = new GaleryInicializationData("Test", @"F:\_saves\imgTest");
 
-await initializer.Inicizalize(data);
+await initializer.Inicialize(data);
 
 return 0;
 

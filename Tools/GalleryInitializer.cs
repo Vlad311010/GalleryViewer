@@ -7,7 +7,7 @@ namespace Tools
     internal class GalleryInitializer(GalleriesService galleriesService, AssetsService assetsService, PersistenceService persistence)
     {
 
-        public async Task Inicizalize(InicializationData data)
+        public async Task Inicialize(GaleryInicializationData data)
         {
             IEnumerable<FilesGroup> files = GetFiles(data);
             // verify
@@ -57,14 +57,14 @@ namespace Tools
 
 
 
-        private IEnumerable<FilesGroup> GetFiles(InicializationData data)
+        private IEnumerable<FilesGroup> GetFiles(GaleryInicializationData data)
         {
             string root = @$"{data.Path}";
 
             // var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm" };
             var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
 
-            SearchOption searchOption = data.groupSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            SearchOption searchOption = SearchOption.AllDirectories;
 
             IEnumerable<FilesGroup> files = Directory
                 .EnumerateFiles(root, "*.*", searchOption)
@@ -86,7 +86,7 @@ namespace Tools
 
                 foreach (var file in group.Files)
                 {
-                    Debug.Log($"  {file}");
+                    Debug.Log($"\t{file}");
                 }
             }
 

@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using App;
 
 namespace Tools
 {
-    internal class PreviewCreator
+    internal class PreviewCreator(GalleriesService galleriesService, AssetsService assetsService, PersistenceService persistence)
     {
+
+        // public void 
     }
 }

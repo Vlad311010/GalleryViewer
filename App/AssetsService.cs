@@ -1,52 +1,13 @@
 ﻿using App.Dto;
 using App.Extensions;
 using App.PreviewCreation;
+using App.Utils;
 using Data.Entities;
-using System.Security.Cryptography;
 
 namespace App
 {
     public class AssetsService(AssetsCatalogContext context, PreviewCreatorService previewCreation)
     {
-        private async Task<Asset> CreateAssetWithoutGroupAsync(AssetDtoCreate dto, bool createPreview = true)
-        {
-            Gallery? targetGallery = context.Galleries.SingleOrDefault(x => x.Id == dto.GalleryId);
-            if (targetGallery == null)
-            {
-                throw new ArgumentException("TODO: custom exception");
-            }
-
-            string assetFilePath = Path.Combine(targetGallery.Path, dto.RelativePath);
-            if (!File.Exists(assetFilePath))
-            {
-                throw new FileNotFoundException("Asset file not found", dto.RelativePath);
-            }
-
-            /// As file creation time is reseted during copy, so modified time may be better source of true of when file landed in file system.
-            /// Just for safety measure smallest of two values is taken as creationTime.
-            DateTime creationTime = File.GetCreationTimeUtc(assetFilePath);
-            DateTime modifiedTime = File.GetLastWriteTimeUtc(assetFilePath);
-            creationTime = creationTime > modifiedTime ? modifiedTime : creationTime;
-            DateTime currentTime = DateTime.UtcNow;
-            string hash = await ComputeMd5HashAsync(assetFilePath);
-            string? previewPath = null;
-
-            if (createPreview)
-            {
-                previewPath = await previewCreation.CreatePreviewAsync(targetGallery.Path, Path.Combine(assetFilePath));
-            }
-
-            return new Asset
-            {
-                GalleryId = dto.GalleryId,
-                RelativePath = dto.RelativePath,
-                MimeType = dto.RelativePath.ToMimeType(),
-                Hash = hash,
-                CreationTime = creationTime,
-                ImportTime = currentTime,
-                PreviewPath = previewPath
-            };
-        }
 
         public async Task<AssetDto> AddAssetAsync(AssetDtoCreate dto)
         {
@@ -110,14 +71,44 @@ namespace App
             return new AssetGroupDto(entity.Id, entity.CoverAssetIdx, entity.Title);
         }
 
-        private async static Task<string> ComputeMd5HashAsync(string filePath) // TODO: extract to helper
+        private async Task<Asset> CreateAssetWithoutGroupAsync(AssetDtoCreate dto, bool createPreview = true)
         {
-            using var md5 = MD5.Create();
-            await using var stream = File.OpenRead(filePath);
+            Gallery? targetGallery = context.Galleries.SingleOrDefault(x => x.Id == dto.GalleryId);
+            if (targetGallery == null)
+            {
+                throw new ArgumentException("TODO: custom exception");
+            }
 
-            byte[] hash = await md5.ComputeHashAsync(stream);
+            string assetFilePath = Path.Combine(targetGallery.Path, dto.RelativePath);
+            if (!File.Exists(assetFilePath))
+            {
+                throw new FileNotFoundException("Asset file not found", dto.RelativePath);
+            }
 
-            return Convert.ToHexString(hash).ToLowerInvariant();
+            /// As file creation time is reseted during copy, so modified time may be better source of true of when file landed in file system.
+            /// Just for safety measure smallest of two values is taken as creationTime.
+            DateTime creationTime = File.GetCreationTimeUtc(assetFilePath);
+            DateTime modifiedTime = File.GetLastWriteTimeUtc(assetFilePath);
+            creationTime = creationTime > modifiedTime ? modifiedTime : creationTime;
+            DateTime currentTime = DateTime.UtcNow;
+            string hash = await Md5Hash.ComputeAsync(assetFilePath);
+            string? previewPath = null;
+
+            if (createPreview)
+            {
+                previewPath = await previewCreation.CreatePreviewAsync(targetGallery.Path, Path.Combine(assetFilePath));
+            }
+
+            return new Asset
+            {
+                GalleryId = dto.GalleryId,
+                RelativePath = dto.RelativePath,
+                MimeType = dto.RelativePath.ToMimeType(),
+                Hash = hash,
+                CreationTime = creationTime,
+                ImportTime = currentTime,
+                PreviewPath = previewPath
+            };
         }
     }
 }
