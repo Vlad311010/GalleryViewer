@@ -40,9 +40,8 @@ namespace App
             List<DisplayItemDto> displayItems = new List<DisplayItemDto>(pageDisplayItemKeys.Count);
             foreach (var itemKey in pageDisplayItemKeys)
             {
-                DisplayItemType itemType = itemKey.IsGroup ? DisplayItemType.Group : DisplayItemType.Asset; // TODO: extract to helper 
+                DisplayItemType itemType = itemKey.IsGroup ? DisplayItemType.Group : DisplayItemType.Asset;
                 int id = itemKey.Id;
-                string? previewPath = null;
                 string? title = null;
                 int? count = null;
                 DateTime creationTime = DateTime.MinValue;
@@ -52,7 +51,6 @@ namespace App
                 {
                     case DisplayItemType.Asset:
                         Asset asset = context.Assets.Single(x => x.Id == id);
-                        previewPath = asset.PreviewPath;
                         creationTime = asset.CreationTime;
                         importTime = asset.ImportTime;
                         break;
@@ -67,14 +65,9 @@ namespace App
                                 g.CreationTime,
                                 g.ImportTime,
                                 Count = g.Assets.Count(),
-                                PreviewPath = g.Assets
-                                    .Where(a => a.GroupPosition == g.CoverAssetIdx)
-                                    .Select(a => a.PreviewPath)
-                                    .SingleOrDefault()
                             })
                             .SingleAsync();
 
-                        previewPath = groupData.PreviewPath;
                         title = groupData.Title;
                         count = groupData.Count;
                         creationTime = groupData.CreationTime;
@@ -86,7 +79,6 @@ namespace App
                 {
                     Type = itemType,
                     Id = id,
-                    PreviewPath = previewPath,
                     Title = title,
                     Count = count,
                     CreationTime = creationTime,

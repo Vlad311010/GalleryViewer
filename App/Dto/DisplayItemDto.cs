@@ -7,8 +7,6 @@ namespace App.Dto
         public DisplayItemType Type { get; set; }
         public int Id { get; set; }
 
-        public string? PreviewPath { get; set; } = null!;
-
         public DateTime CreationTime { get; set; }
         public DateTime ImportTime { get; set; }
 

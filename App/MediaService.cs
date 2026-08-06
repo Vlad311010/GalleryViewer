@@ -1,5 +1,6 @@
 ﻿using App.Dto;
 using App.Enum;
+using App.Exceptions;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +8,7 @@ namespace App
 {
     public class MediaService(AssetsCatalogContext context)
     {
-        public async Task<MediaDto> GetAssetPreviewAsync(MediaFetchDto mediaRequest)
+        public async Task<MediaDto> GetAssetPreviewAsync(MediaDtoFetch mediaRequest)
         {
             FileInfo previeFileInfo = null;
             switch (mediaRequest.ItemType)
@@ -31,15 +32,31 @@ namespace App
             );
         }
 
-        public record MediaDto(Stream MediaStream, string MimeType);
+        public async Task<MediaDto> GetAssetMediaAsync(AssetMediaDtoFetch assetRequest)
+        {
+            Asset? asset = await context.Assets.FindAsync(assetRequest.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetRequest.AssetId);
+
+            Gallery? gallery = await context.Galleries.FindAsync(asset.GalleryId);
+            EntityNotFoundException<Gallery>.ThrowIfNull(gallery, asset.GalleryId);
+
+            string assetPath = Path.Combine(gallery.Path, asset.RelativePath);
+            if (string.IsNullOrWhiteSpace(assetPath) || !File.Exists(assetPath))
+            {
+                // TODO: return not found preview image
+            }
+
+            return new MediaDto(
+                new FileStream(assetPath, FileMode.Open, FileAccess.Read, FileShare.Read),
+                asset.MimeType
+            );
+        }
+
 
         private async Task<FileInfo> GetAssetPreviewPathAsync(int id)
         {
-            Asset? asset = await context.Assets.SingleOrDefaultAsync(x => x.Id == id);
-            if (asset == null)
-            {
-                throw new Exception("TODO: NotFoundException");
-            }
+            Asset? asset = await context.Assets.FindAsync(id);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, id);
 
             return new FileInfo(asset.PreviewPath, asset.MimeType);
         }
@@ -63,7 +80,7 @@ namespace App
 
             if (fileInfo == null)
             {
-                throw new Exception("TODO: NotFoundException");
+                throw new EntityNotFoundException<AssetGroup>(id);
             }
 
             return fileInfo;

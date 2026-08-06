@@ -2,7 +2,7 @@
 
 namespace App.Dto
 {
-    public record MediaFetchDto(
+    public record MediaDtoFetch(
         DisplayItemType ItemType,
         int ItemId
     );
