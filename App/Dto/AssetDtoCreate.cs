@@ -2,6 +2,7 @@
 {
     public record AssetDtoCreate(
         int GalleryId,
-        string RelativePath
+        string RelativePath,
+        string? PreviewPath
     );
 }

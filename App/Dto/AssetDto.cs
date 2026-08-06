@@ -4,6 +4,7 @@
         int Id,
         int GalleryId,
         string RelativePath,
+        string? PreviewPath,
         DateTime CreationTime,
         DateTime ImportTime
     ) : EntityDto(Id);

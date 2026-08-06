@@ -1,41 +1,46 @@
 ﻿using App.Dto;
 using App.Extensions;
-using App.PreviewCreation;
 using App.Utils;
 using Data.Entities;
 
 namespace App
 {
-    public class AssetsService(AssetsCatalogContext context, PreviewCreatorService previewCreation)
+    public class AssetsService(AssetsCatalogContext context)
     {
 
-        public async Task<AssetDto> AddAssetAsync(AssetDtoCreate dto)
+        public async Task<AssetDto> CreateAssetAsync(AssetDtoCreate dto)
         {
-            Asset entity = await CreateAssetWithoutGroupAsync(dto);
+            Asset entity = await ConstructAsset(dto);
 
             entity = (await context.Assets.AddAsync(entity)).Entity;
             return new AssetDto(
                 entity.Id,
                 entity.GalleryId,
                 entity.RelativePath,
+                entity.PreviewPath,
                 entity.CreationTime,
                 entity.ImportTime
             );
         }
 
-
-        public async Task<AssetGroupDto> CreateGroupAsync(string? groupName)
+        public async Task<AssetDto> CreateAssetAsync(AssetDtoCreate dto, int groupId, int groupPosition)
         {
-            AssetGroup entity = new AssetGroup()
-            {
-                CoverAssetIdx = 0,
-                Title = string.IsNullOrWhiteSpace(groupName) ? null : groupName
-            };
+            Asset entity = await ConstructAsset(dto);
+            entity.GroupId = groupId;
+            entity.GroupPosition = groupPosition;
 
-            entity = (await context.AssetGroups.AddAsync(entity)).Entity;
+            entity = (await context.Assets.AddAsync(entity)).Entity;
 
-            return new AssetGroupDto(entity.Id, entity.CoverAssetIdx, entity.Title);
+            return new AssetDto(
+                entity.Id,
+                entity.GalleryId,
+                entity.RelativePath,
+                entity.PreviewPath,
+                entity.CreationTime,
+                entity.ImportTime
+            );
         }
+
 
         /// <summary>
         /// </summary>
@@ -43,7 +48,7 @@ namespace App
         /// <param name="assets"></param>
         /// <param name="creationTimeOverride">If present will be a source of creation time. Used to override creation time of groups created of physical directoies</param>
         /// <returns></returns>
-        public async Task<AssetGroupDto> CreateGroupAsync(string? groupName, IList<AssetDtoCreate> assets, DateTime? creationTimeOverride = null)
+        public async Task<AssetGroupDto> CreateGroupAndSaveAsync(string? groupName, DateTime? creationTimeOverride = null)
         {
             DateTime importTime = DateTime.UtcNow;
             DateTime creationTime = creationTimeOverride.HasValue ? creationTimeOverride.Value : importTime;
@@ -52,28 +57,18 @@ namespace App
                 CoverAssetIdx = 0,
                 Title = string.IsNullOrWhiteSpace(groupName) ? null : groupName,
                 CreationTime = creationTime,
-                ImportTime = importTime,
+                ImportTime = importTime
             };
 
-            context.AssetGroups.Add(entity);
             entity = (await context.AssetGroups.AddAsync(entity)).Entity;
-
-
-            for (int i = 0; i < assets.Count(); i++)
-            {
-                Asset assetEntity = await CreateAssetWithoutGroupAsync(assets[i]);
-                assetEntity.Group = entity;
-                assetEntity.GroupPosition = i;
-
-                await context.Assets.AddAsync(assetEntity);
-            }
+            await context.SaveChangesAsync();
 
             return new AssetGroupDto(entity.Id, entity.CoverAssetIdx, entity.Title);
         }
 
-        private async Task<Asset> CreateAssetWithoutGroupAsync(AssetDtoCreate dto, bool createPreview = true)
+        private async Task<Asset> ConstructAsset(AssetDtoCreate dto)
         {
-            Gallery? targetGallery = context.Galleries.SingleOrDefault(x => x.Id == dto.GalleryId);
+            Gallery? targetGallery = await context.Galleries.FindAsync(dto.GalleryId);
             if (targetGallery == null)
             {
                 throw new ArgumentException("TODO: custom exception");
@@ -92,12 +87,6 @@ namespace App
             creationTime = creationTime > modifiedTime ? modifiedTime : creationTime;
             DateTime currentTime = DateTime.UtcNow;
             string hash = await Md5Hash.ComputeAsync(assetFilePath);
-            string? previewPath = null;
-
-            if (createPreview)
-            {
-                previewPath = await previewCreation.CreatePreviewAsync(targetGallery.Path, Path.Combine(assetFilePath));
-            }
 
             return new Asset
             {
@@ -107,7 +96,7 @@ namespace App
                 Hash = hash,
                 CreationTime = creationTime,
                 ImportTime = currentTime,
-                PreviewPath = previewPath
+                PreviewPath = dto.PreviewPath
             };
         }
     }

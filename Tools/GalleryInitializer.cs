@@ -1,56 +1,65 @@
 ﻿using App;
 using App.Dto;
+using App.PreviewCreation;
 using Tools.Models;
 
 namespace Tools
 {
-    internal class GalleryInitializer(GalleriesService galleriesService, AssetsService assetsService, PersistenceService persistence)
+    internal class GalleryInitializer(
+        GalleriesService galleriesService,
+        AssetsService assetsService,
+        PreviewCreatorService previewCreatorService,
+        PersistenceService persistence)
     {
 
-        public async Task Inicialize(GaleryInicializationData data)
+        public async Task InicializeGallery(GaleryInicializationData data)
         {
             IEnumerable<FilesGroup> files = GetFiles(data);
-            // verify
+            // TODO: verify
 
             if (files.Count() == 0)
             {
-                return; // Meaningfull error
+                return; // TODO: Meaningfull error
             }
 
             GalleryDtoCreate galleryData = new GalleryDtoCreate(data.Name, data.Path);
-            string galleryName = (await galleriesService.CreateAsync(galleryData)).Name; // Id not available until data is saved
+            GalleryDto gallery = await galleriesService.CreateAndSaveAsync(galleryData);
 
-            await persistence.SaveChangesAsync();
-            // int galleryId = await CreateGalleryAsync(data);
-
-
-            await AddAssetsAsync(galleryName, files);
+            await AddAssetsAsync(gallery, files);
 
             await persistence.SaveChangesAsync();
         }
 
-        private async Task AddAssetsAsync(string galleryName, IEnumerable<FilesGroup> filesGroups)
+        private async Task AddAssetsAsync(GalleryDto gallery, IEnumerable<FilesGroup> filesGroups)
         {
-            GalleryDto gallery = await galleriesService.GetByNameAsync(galleryName);
-            foreach (var group in filesGroups)
+            foreach (var filesGroup in filesGroups)
             {
-                AssetDtoCreate[] assets = group.Files
-                    .Select(path => new AssetDtoCreate(
-                        gallery.Id,
-                        path)
-                    ).ToArray();
+                AssetGroupDto? group = null;
+                if (!string.IsNullOrEmpty(filesGroup.Folder)) // skip grouping for root folder
+                {
+                    DateTime creationTime = Directory.GetCreationTimeUtc(
+                        Path.Combine(gallery.Path, filesGroup.Folder));
 
-                if (string.IsNullOrEmpty(group.Folder)) // root folder
-                {
-                    foreach (var asset in assets)
-                    {
-                        await assetsService.AddAssetAsync(asset);
-                    }
+                    group = await assetsService.CreateGroupAndSaveAsync(
+                        filesGroup.Folder,
+                        creationTime);
                 }
-                else
+
+
+                for (int i = 0; i < filesGroup.Files.Length; i++)
                 {
-                    DateTime folderCreationTime = Directory.GetCreationTimeUtc(Path.Combine(gallery.Path, group.Folder));
-                    await assetsService.CreateGroupAsync(group.Folder, assets, folderCreationTime);
+                    string assetFilePath = Path.Combine(gallery.Path, filesGroup.Files[i]);
+                    string previewPath = await previewCreatorService.CreatePreviewAsync(gallery.Path, assetFilePath);
+
+                    AssetDtoCreate assetDtoCreate = new AssetDtoCreate(gallery.Id, filesGroup.Files[i], previewPath);
+                    if (group == null)
+                    {
+                        await assetsService.CreateAssetAsync(assetDtoCreate);
+                    }
+                    else
+                    {
+                        await assetsService.CreateAssetAsync(assetDtoCreate, group.Id, i);
+                    }
                 }
             }
         }

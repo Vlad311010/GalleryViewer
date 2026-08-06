@@ -6,7 +6,7 @@ namespace App
 {
     public class GalleriesService(AssetsCatalogContext context)
     {
-        public async Task<GalleryDto> CreateAsync(GalleryDtoCreate dto)
+        public async Task<GalleryDto> CreateAndSaveAsync(GalleryDtoCreate dto)
         {
             Gallery entity = new Gallery
             {

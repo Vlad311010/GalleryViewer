@@ -47,13 +47,13 @@ using var context = new AssetsCatalogContext(dbOptions);
 
 PreviewCreatorService previewCreatorService = new PreviewCreatorService(previewSettingWrapper);
 GalleriesService galleriesService = new GalleriesService(context);
-AssetsService imagesService = new AssetsService(context, previewCreatorService);
+AssetsService imagesService = new AssetsService(context);
 PersistenceService persistance = new PersistenceService(context);
-var initializer = new GalleryInitializer(galleriesService, imagesService, persistance);
+var initializer = new GalleryInitializer(galleriesService, imagesService, previewCreatorService, persistance);
 
 var data = new GaleryInicializationData("Test", @"F:\_saves\imgTest");
 
-await initializer.Inicialize(data);
+await initializer.InicializeGallery(data);
 
 return 0;
 
