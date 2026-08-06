@@ -16,8 +16,6 @@ namespace App
 
         public async Task<List<DisplayItemDto>> ListAsync(FilterDto filter)
         {
-            // 1, 2, 3, [4,5,6], 7 | Take 5
-
             var displayItemKeys = context.Assets
                 // .Where(...) // filtering
                 .GroupBy(a => new

@@ -21,21 +21,6 @@ namespace App
             return new GalleryDto(createdEntity.Id, createdEntity.Name, createdEntity.Path);
         }
 
-        /*public async Task<GalleryDto> CreateAsync(GalleryDtoCreate dto, IEnumerable<>)
-        {
-            Gallery entity = new Gallery
-            {
-                Name = dto.Name,
-                Path = dto.Path
-            };
-
-
-            Gallery createdEntity = (await context.Galleries.AddAsync(entity)).Entity;
-            await context.SaveChangesAsync();
-
-            return new GalleryDto(createdEntity.Id, createdEntity.Name, createdEntity.Path);
-        }*/
-
         public async Task<GalleryDto> GetByNameAsync(string galleryName)
         {
             Gallery? entity = await context.Galleries.SingleOrDefaultAsync(x => x.Name == galleryName);

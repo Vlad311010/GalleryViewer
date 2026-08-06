@@ -18,6 +18,7 @@ builder.Services.AddDbContext<AssetsCatalogContext>();
 // Services
 builder.Services.AddTransient<FilterService>();
 builder.Services.AddTransient<PreviewCreatorService>();
+builder.Services.AddTransient<MediaService>();
 
 
 var app = builder.Build();
