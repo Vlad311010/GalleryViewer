@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace App
+namespace App.PreviewCreation
 {
-    internal class SearchService
+    internal class PreviewCreator
     {
     }
 }

@@ -3,6 +3,8 @@
     public record AssetDto(
         int Id,
         int GalleryId,
-        string RelativePath
+        string RelativePath,
+        DateTime CreationTime,
+        DateTime ImportTime
     ) : EntityDto(Id);
 }

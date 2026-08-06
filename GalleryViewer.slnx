@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
   <Project Path="App/App.csproj" Id="0ed18a68-67fd-47a5-b2c1-d34529609002" />
   <Project Path="Data/Data.csproj" Id="fc18fbf2-7c4c-4d7f-a618-80fd8e90350f" />
   <Project Path="GalleryViewer/GalleryViewer.csproj" />

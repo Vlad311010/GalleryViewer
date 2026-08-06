@@ -18,6 +18,10 @@ public partial class Asset
 
     public string Hash { get; set; } = null!;
 
+    public DateTime CreationTime { get; set; }
+
+    public DateTime ImportTime { get; set; }
+
     public virtual ICollection<Gallery> Galleries { get; set; } = new List<Gallery>();
 
     public virtual Gallery Gallery { get; set; } = null!;

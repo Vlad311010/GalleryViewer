@@ -37,9 +37,7 @@ namespace Tools
                 AssetDtoCreate[] assets = group.Files
                     .Select(path => new AssetDtoCreate(
                         gallery.Id,
-                        path,
-                        null,
-                        null)
+                        path)
                     ).ToArray();
 
                 if (string.IsNullOrEmpty(group.Folder)) // root folder
@@ -51,7 +49,8 @@ namespace Tools
                 }
                 else
                 {
-                    await assetsService.CreateGroupAsync(group.Folder, assets);
+                    DateTime folderCreationTime = Directory.GetCreationTimeUtc(Path.Combine(gallery.Path, group.Folder));
+                    await assetsService.CreateGroupAsync(group.Folder, assets, folderCreationTime);
                 }
             }
         }

@@ -1,3 +1,4 @@
+using App;
 using Data.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +11,10 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<AssetsCatalogContext>();
 
 // Data Services
+builder.Services.AddTransient<FilterService>();
 
+/*builder.Services.Configure<AppSettings>(
+    builder.Configuration.GetSection(AppSettings.SectionName));*/
 
 var app = builder.Build();
 
