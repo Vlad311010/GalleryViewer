@@ -21,15 +21,10 @@ namespace App
             return new GalleryDto(createdEntity.Id, createdEntity.Name, createdEntity.Path);
         }
 
-        public async Task<GalleryDto> GetByNameAsync(string galleryName)
+        public async Task<GalleryDto?> GetByNameAsync(string galleryName)
         {
             Gallery? entity = await context.Galleries.SingleOrDefaultAsync(x => x.Name == galleryName);
-            if (entity == null)
-            {
-                throw new Exception("TODO: not found exception");
-            }
-
-            return new GalleryDto(entity.Id, entity.Name, entity.Path);
+            return entity == null ? null : new GalleryDto(entity.Id, entity.Name, entity.Path);
         }
 
         public async Task<IEnumerable<GalleryDto>> ListAsync()

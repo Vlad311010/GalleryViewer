@@ -3,6 +3,8 @@
     public record AssetDtoCreate(
         int GalleryId,
         string RelativePath,
-        string? PreviewPath
+        string? PreviewPath,
+        int? groupId,
+        int? groupPosition
     );
 }

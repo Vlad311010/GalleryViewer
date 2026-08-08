@@ -13,6 +13,8 @@ public partial class Gallery
 
     public int? CoverSourceId { get; set; }
 
+    public virtual ICollection<AssetGroup> AssetGroups { get; set; } = new List<AssetGroup>();
+
     public virtual ICollection<Asset> Assets { get; set; } = new List<Asset>();
 
     public virtual Asset? CoverSource { get; set; }

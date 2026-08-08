@@ -49,11 +49,11 @@ PreviewCreatorService previewCreatorService = new PreviewCreatorService(previewS
 GalleriesService galleriesService = new GalleriesService(context);
 AssetsService imagesService = new AssetsService(context);
 PersistenceService persistance = new PersistenceService(context);
-var initializer = new GalleryInitializer(galleriesService, imagesService, previewCreatorService, persistance);
+var initializer = new GallerySync(galleriesService, imagesService, previewCreatorService, persistance);
 
 var data = new GaleryInicializationData("Test", @"F:\_saves\imgTest");
 
-await initializer.InicializeGallery(data);
+await initializer.SyncronizeGalleryAsync(data);
 
 return 0;
 

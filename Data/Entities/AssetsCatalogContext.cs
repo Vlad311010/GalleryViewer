@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace Data.Entities;
 
@@ -35,11 +37,24 @@ public partial class AssetsCatalogContext : DbContext
         {
             entity.ToTable("Asset");
 
+            entity.HasIndex(e => new { e.GalleryId, e.RelativePath }, "Asset_GalleryId_IDX");
+
+            entity.HasIndex(e => new { e.GroupId, e.GroupPosition }, "Asset_GroupId_IDX");
+
             entity.HasIndex(e => e.Hash, "Asset_Hash_IDX");
 
             entity.HasOne(d => d.Gallery).WithMany(p => p.Assets).HasForeignKey(d => d.GalleryId);
 
             entity.HasOne(d => d.Group).WithMany(p => p.Assets).HasForeignKey(d => d.GroupId);
+        });
+
+        modelBuilder.Entity<AssetGroup>(entity =>
+        {
+            entity.HasIndex(e => new { e.GalleryId, e.PhysicalRelativePath }, "AssetGroups_GalleryId_IDX").IsUnique();
+
+            entity.HasOne(d => d.Gallery).WithMany(p => p.AssetGroups)
+                .HasForeignKey(d => d.GalleryId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<AssetTag>(entity =>

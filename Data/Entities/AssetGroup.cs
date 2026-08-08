@@ -12,5 +12,11 @@ public partial class AssetGroup
 
     public DateTime ImportTime { get; set; }
 
+    public string? PhysicalRelativePath { get; set; }
+
+    public int GalleryId { get; set; }
+
     public virtual ICollection<Asset> Assets { get; set; } = new List<Asset>();
+
+    public virtual Gallery Gallery { get; set; } = null!;
 }
