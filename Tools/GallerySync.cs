@@ -2,7 +2,6 @@
 using App.Dto;
 using App.PreviewCreation;
 using Tools.Models;
-using static App.AssetsService;
 
 namespace Tools
 {
@@ -10,6 +9,7 @@ namespace Tools
         GalleriesService galleriesService,
         AssetsService assetsService,
         PreviewCreatorService previewCreatorService,
+        GroupsService gropusService,
         PersistenceService persistence)
     {
 
@@ -58,13 +58,13 @@ namespace Tools
                     continue;
                 }
 
-                AssetGroupDto? group = await assetsService.GetPhysicalGroup(gallery.Id, filesGroup.Folder);
+                AssetGroupDto? group = await gropusService.GetPhysicalGroup(gallery.Id, filesGroup.Folder);
                 if (group == null)
                 {
                     Debug.Log($"New group {filesGroup.Folder}");
                     await CreateGroupAsync(gallery, filesGroup);
                 }
-                else if (!assetsService.IsSynchronized(group, filesGroup.Files, out List<AssetSynchronizationDto> outOfSyncAsset))// out of sync
+                else if (!gropusService.IsSynchronized(group, filesGroup.Files, out List<AssetSynchronizationDto> outOfSyncAsset))// out of sync
                 {
                     List<int> assetIdsToDelete = new List<int>();
                     List<string> missingAssetPaths = new List<string>();
@@ -89,11 +89,11 @@ namespace Tools
                     int groupPositionOffset; // TODO: refactor/remove. calculate position on insert relay on actual group object.
                     if (deleted > 0)
                     {
-                        groupPositionOffset = 1 + await assetsService.NormalizePositionAsync(group!.Id);
+                        groupPositionOffset = 1 + await gropusService.NormalizePositionAsync(group!.Id);
                     }
                     else
                     {
-                        groupPositionOffset = await assetsService.AssetsCount(group!.Id);
+                        groupPositionOffset = await gropusService.AssetsCount(group!.Id);
                     }
 
                     await CreateAssets(gallery, new FilesGroup(filesGroup.Folder, [.. missingAssetPaths]), group, groupPositionOffset);
@@ -115,7 +115,7 @@ namespace Tools
                 Path.Combine(gallery.Path, filesGroup.Folder));
 
             AssetGroupDtoCreate createDto = new(gallery.Id, filesGroup.Folder, filesGroup.Folder, creationTime);
-            AssetGroupDto group = await assetsService.CreateGroupAndSaveAsync(createDto);
+            AssetGroupDto group = await gropusService.CreateGroupAndSaveAsync(createDto);
 
             await CreateAssets(gallery, filesGroup, group);
         }
@@ -144,8 +144,8 @@ namespace Tools
         {
             string root = @$"{data.Path}";
 
-            // var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm" };
-            var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm" };
+            // var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
 
             SearchOption searchOption = SearchOption.AllDirectories;
 

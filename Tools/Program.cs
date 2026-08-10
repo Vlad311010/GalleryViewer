@@ -48,8 +48,9 @@ using var context = new AssetsCatalogContext(dbOptions);
 PreviewCreatorService previewCreatorService = new PreviewCreatorService(previewSettingWrapper);
 GalleriesService galleriesService = new GalleriesService(context);
 AssetsService imagesService = new AssetsService(context);
+GroupsService gropusService = new GroupsService(context);
 PersistenceService persistance = new PersistenceService(context);
-var initializer = new GallerySync(galleriesService, imagesService, previewCreatorService, persistance);
+var initializer = new GallerySync(galleriesService, imagesService, previewCreatorService, gropusService, persistance);
 
 var data = new GaleryInicializationData("Test", @"F:\_saves\imgTest");
 

@@ -1,6 +1,7 @@
 ﻿using App.Dto;
 using App.Enum;
 using App.Exceptions;
+using App.PreviewCreation;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,7 +59,7 @@ namespace App
             Asset? asset = await context.Assets.FindAsync(id);
             EntityNotFoundException<Asset>.ThrowIfNull(asset, id);
 
-            return new FileInfo(asset.PreviewPath, asset.MimeType);
+            return new FileInfo(asset.PreviewPath, PreviewCreatorService.PreviewFileMimeType);
         }
 
 
@@ -72,7 +73,7 @@ namespace App
                         .Select(a => new FileInfo
                         (
                             a.PreviewPath,
-                            a.MimeType
+                            PreviewCreatorService.PreviewFileMimeType // a.MimeType
                         ))
                         .Single()
                 )
