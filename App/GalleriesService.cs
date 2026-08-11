@@ -1,4 +1,4 @@
-﻿using App.Dto;
+﻿using App.Dto.Gallery;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 

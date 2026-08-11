@@ -1,5 +1,8 @@
 ﻿using App;
 using App.Dto;
+using App.Dto.Asset;
+using App.Dto.Gallery;
+using App.Dto.Group;
 using App.PreviewCreation;
 using Tools.Models;
 

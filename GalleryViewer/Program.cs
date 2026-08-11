@@ -12,6 +12,18 @@ builder.Services.AddControllers();
 builder.Services.Configure<PreviewSettings>(
     builder.Configuration.GetSection(PreviewSettings.SectionName));
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // DB
 builder.Services.AddDbContext<AssetsCatalogContext>();
 
@@ -21,7 +33,15 @@ builder.Services.AddTransient<PreviewCreatorService>();
 builder.Services.AddTransient<MediaService>();
 
 
+// Open API
+builder.Services.AddOpenApi();
+
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -31,7 +51,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-
+app.UseCors("frontend");
 
 app.UseHttpsRedirection();
 
@@ -42,5 +62,6 @@ app.UseAuthorization();
 app.MapStaticAssets();
 
 app.MapControllers();
+
 
 app.Run();

@@ -1,7 +1,8 @@
-﻿using App.Dto;
+﻿using App.Dto.Filter;
 using App.Enum;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Shared.Models;
 
 namespace App
 {
@@ -14,7 +15,7 @@ namespace App
             this.context = context;
         }
 
-        public async Task<List<DisplayItemDto>> ListAsync(FilterDto filter)
+        public async Task<PagedData<DisplayItemDto>> ListAsync(FilterDto filter)
         {
             var displayItemKeys = context.Assets
                 // .Where(...) // filtering
@@ -38,6 +39,7 @@ namespace App
             // TODO:? group unfolding logic
 
             List<DisplayItemDto> displayItems = new List<DisplayItemDto>(pageDisplayItemKeys.Count);
+            int totalCount = displayItemKeys.Count();
             foreach (var itemKey in pageDisplayItemKeys)
             {
                 DisplayItemType itemType = itemKey.IsGroup ? DisplayItemType.Group : DisplayItemType.Asset;
@@ -86,7 +88,7 @@ namespace App
                 });
             }
 
-            return displayItems;
+            return new(displayItems, filter.Skip, filter.Take, totalCount);
         }
     }
 }

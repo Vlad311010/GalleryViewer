@@ -1,4 +1,4 @@
-﻿namespace App.Dto
+﻿namespace App.Dto.Group
 {
     public record AssetGroupDto(
         int Id,

@@ -1,5 +1,5 @@
 ﻿using App;
-using App.Dto;
+using App.Dto.Media;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Controllers
@@ -8,6 +8,8 @@ namespace GalleryViewer.Controllers
     {
 
         [HttpGet("{id}")]
+        [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
+        [EndpointName("asset")]
         public async Task<IActionResult> GetAsset([FromRoute] int id)
         {
             var requestDto = new AssetMediaDtoFetch(id);
@@ -16,13 +18,28 @@ namespace GalleryViewer.Controllers
             return File(response.MediaStream, response.MimeType, true);
         }
 
-        [HttpGet("preview/{id}")]
-        public async Task<IActionResult> GetPreview([FromRoute] int id)
+        [HttpGet("asset/preview/{id}")]
+        [EndpointName("assetPreview")]
+        [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAssetPreview([FromRoute] int id)
         {
             var requestDto = new MediaDtoFetch(App.Enum.DisplayItemType.Asset, id);
             var response = await mediaService.GetAssetPreviewAsync(requestDto);
 
             return File(response.MediaStream, response.MimeType, true);
         }
+
+
+        [HttpGet("group/preview/{id}")]
+        [EndpointName("groupPreview")]
+        [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetGroupPreview([FromRoute] int id)
+        {
+            var requestDto = new MediaDtoFetch(App.Enum.DisplayItemType.Group, id);
+            var response = await mediaService.GetAssetPreviewAsync(requestDto);
+
+            return File(response.MediaStream, response.MimeType, true);
+        }
+
     }
 }

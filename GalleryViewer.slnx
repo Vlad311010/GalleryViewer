@@ -5,5 +5,6 @@
   <Project Path="App/App.csproj" Id="0ed18a68-67fd-47a5-b2c1-d34529609002" />
   <Project Path="Data/Data.csproj" Id="fc18fbf2-7c4c-4d7f-a618-80fd8e90350f" />
   <Project Path="GalleryViewer/GalleryViewer.csproj" />
+  <Project Path="Shared/Shared.csproj" Id="e38adb54-14ba-471a-a4e8-d6221cb101bd" />
   <Project Path="Tools/Tools.csproj" Id="052eda7b-f108-4f0c-b563-6c38622590bb" />
 </Solution>

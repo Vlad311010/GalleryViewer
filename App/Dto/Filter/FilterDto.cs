@@ -1,4 +1,4 @@
-﻿namespace App.Dto
+﻿namespace App.Dto.Filter
 {
     public record FilterDto
     {

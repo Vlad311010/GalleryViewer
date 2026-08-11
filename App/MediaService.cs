@@ -1,4 +1,4 @@
-﻿using App.Dto;
+﻿using App.Dto.Media;
 using App.Enum;
 using App.Exceptions;
 using App.PreviewCreation;
@@ -9,6 +9,26 @@ namespace App
 {
     public class MediaService(AssetsCatalogContext context)
     {
+        public async Task<MediaDto> GetAssetMediaAsync(AssetMediaDtoFetch assetRequest)
+        {
+            Asset? asset = await context.Assets.FindAsync(assetRequest.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetRequest.AssetId);
+
+            Gallery? gallery = await context.Galleries.FindAsync(asset.GalleryId);
+            EntityNotFoundException<Gallery>.ThrowIfNull(gallery, asset.GalleryId);
+
+            string assetPath = Path.Combine(gallery.Path, asset.RelativePath);
+            if (string.IsNullOrWhiteSpace(assetPath) || !File.Exists(assetPath))
+            {
+                // TODO: return not found preview image
+            }
+
+            return new MediaDto(
+                new FileStream(assetPath, FileMode.Open, FileAccess.Read, FileShare.Read),
+                asset.MimeType
+            );
+        }
+
         public async Task<MediaDto> GetAssetPreviewAsync(MediaDtoFetch mediaRequest)
         {
             FileInfo previeFileInfo = null;
@@ -33,27 +53,6 @@ namespace App
             );
         }
 
-        public async Task<MediaDto> GetAssetMediaAsync(AssetMediaDtoFetch assetRequest)
-        {
-            Asset? asset = await context.Assets.FindAsync(assetRequest.AssetId);
-            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetRequest.AssetId);
-
-            Gallery? gallery = await context.Galleries.FindAsync(asset.GalleryId);
-            EntityNotFoundException<Gallery>.ThrowIfNull(gallery, asset.GalleryId);
-
-            string assetPath = Path.Combine(gallery.Path, asset.RelativePath);
-            if (string.IsNullOrWhiteSpace(assetPath) || !File.Exists(assetPath))
-            {
-                // TODO: return not found preview image
-            }
-
-            return new MediaDto(
-                new FileStream(assetPath, FileMode.Open, FileAccess.Read, FileShare.Read),
-                asset.MimeType
-            );
-        }
-
-
         private async Task<FileInfo> GetAssetPreviewPathAsync(int id)
         {
             Asset? asset = await context.Assets.FindAsync(id);
@@ -61,7 +60,6 @@ namespace App
 
             return new FileInfo(asset.PreviewPath, PreviewCreatorService.PreviewFileMimeType);
         }
-
 
         private async Task<FileInfo> GetGroupPreviewPathAsync(int id)
         {

@@ -1,6 +1,6 @@
 ﻿using App.Enum;
 
-namespace App.Dto
+namespace App.Dto.Media
 {
     public record MediaDtoFetch(
         DisplayItemType ItemType,

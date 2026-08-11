@@ -1,4 +1,4 @@
-﻿namespace App.Dto
+﻿namespace App.Dto.Gallery
 {
     public record GalleryDto(
         int Id,
