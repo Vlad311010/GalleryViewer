@@ -3,6 +3,7 @@
     public record GalleryDto(
         int Id,
         string Name,
-        string Path
+        string Path,
+        int? CoverAssetId
     ) : EntityDto(Id);
 }

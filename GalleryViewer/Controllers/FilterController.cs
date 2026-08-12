@@ -33,7 +33,7 @@ namespace GalleryViewer.Controllers
                 CreationTime = dto.CreationTime,
                 ImportTime = dto.ImportTime,
                 Title = dto.Title,
-                Count = dto.Count
+                Count = dto.Count,
             };
         }
     }

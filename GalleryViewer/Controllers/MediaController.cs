@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Controllers
 {
+    [Produces("application/octet-stream")]
     public class MediaController(MediaService mediaService) : BaseController
     {
-
         [HttpGet("{id}")]
         [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
         [EndpointName("asset")]
