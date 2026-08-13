@@ -32,6 +32,7 @@ builder.Services.AddTransient<AssetsService>();
 builder.Services.AddTransient<FilterService>();
 builder.Services.AddTransient<PreviewCreatorService>();
 builder.Services.AddTransient<MediaService>();
+builder.Services.AddTransient<TagsServices>();
 builder.Services.AddTransient<GalleriesService>();
 
 
