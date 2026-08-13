@@ -19,6 +19,7 @@ namespace App
         {
             var displayItemKeys = context.Assets
                 // .Where(...) // filtering
+                .OrderBy(x => x.Id)
                 .GroupBy(a => new
                 {
                     IsGroup = a.GroupId.HasValue,

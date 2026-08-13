@@ -28,7 +28,9 @@ namespace App
 
         public async Task<IEnumerable<GalleryDto>> ListAsync()
         {
-            IEnumerable<Gallery> galleries = await context.Galleries.ToListAsync();
+            IEnumerable<Gallery> galleries = await context.Galleries
+                .OrderBy(x => x.Id)
+                .ToListAsync();
             return galleries.Select(x => new GalleryDto(x.Id, x.Name, x.Path, x.CoverSourceId));
         }
 
