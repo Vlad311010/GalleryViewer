@@ -1,6 +1,7 @@
 ﻿using App.Dto;
 using App.Dto.Asset;
 using App.Extensions;
+using App.Mappers;
 using App.Utils;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -10,20 +11,6 @@ namespace App
 {
     public class AssetsService(AssetsCatalogContext context)
     {
-        private static AssetDto ToAssetDto(Asset asset) // move to extensions
-        {
-            ArgumentNullException.ThrowIfNull(asset);
-
-            return new AssetDto(
-                asset.Id,
-                asset.GalleryId,
-                asset.RelativePath,
-                asset.PreviewPath,
-                asset.CreationTime,
-                asset.ImportTime
-            );
-        }
-
         public bool TryGetByHash(string md5Hash, [NotNullWhen(true)] out AssetDto assetDto)
         {
             Asset? asset = context.Assets.FirstOrDefault(x => x.Hash == md5Hash);
@@ -33,7 +20,7 @@ namespace App
                 return false;
             }
 
-            assetDto = ToAssetDto(asset);
+            assetDto = asset.ToAssetDto();
             return true;
         }
 
@@ -74,7 +61,7 @@ namespace App
             };
 
             entity = (await context.Assets.AddAsync(entity)).Entity;
-            return ToAssetDto(entity);
+            return entity.ToAssetDto();
         }
 
         public async Task<bool> DeleteAsync(int id)

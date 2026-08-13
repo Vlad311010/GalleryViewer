@@ -1,6 +1,6 @@
 ﻿namespace App.Dto.Filter
 {
-    public record FilterDto
+    public record BaseFilterDto
     {
         public int Skip { get; set; }
         public int Take { get; set; }

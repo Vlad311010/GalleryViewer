@@ -109,7 +109,7 @@ namespace App
             return assets.Length;
         }
 
-        public async Task<int> AssetsCount(int groupId)
+        public async Task<int> AssetsCountAsync(int groupId)
         {
             AssetGroup? group = await context.AssetGroups
                 .AsNoTracking()
@@ -122,6 +122,21 @@ namespace App
                 .Where(x => x.Id == groupId)
                 .Select(x => x.Assets.Count)
                 .SingleOrDefaultAsync();
+        }
+
+        public async Task<AssetGroupDto> GetByIdAsync(int groupId)
+        {
+            AssetGroup? group = await context.AssetGroups.FindAsync(groupId);
+
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+
+            return new AssetGroupDto(
+                    group.Id,
+                    group.GalleryId,
+                    group.CoverAssetIdx,
+                    group.Title,
+                    group.PhysicalRelativePath
+                );
         }
     }
 }

@@ -8,9 +8,6 @@
         public int TotalCount { get; init; }
         public int PagesCount { get; init; }
 
-        public bool HasPrevious => Skip > 0;
-        public bool HasNext => Skip + Items.Count() >= TotalCount;
-
         public PagedData(IEnumerable<T> items, int skip, int take, int totalCount)
         {
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(take, 0);

@@ -1,16 +1,23 @@
 ﻿using App.Enum;
+using System.ComponentModel.DataAnnotations;
 
 namespace GalleryViewer.Models.Response
 {
     public record DisplayItemResponseModel
     {
-        public DisplayItemType Type { get; set; }
-        public int Id { get; set; }
+        [Required]
+        public DisplayItemType Type { get; init; }
 
-        public DateTime CreationTime { get; set; }
-        public DateTime ImportTime { get; set; }
+        [Required]
+        public int Id { get; init; }
 
-        public string? Title { get; set; }
-        public int? Count { get; set; }
+        [Required]
+        public DateTime CreationTime { get; init; }
+
+        [Required]
+        public DateTime ImportTime { get; init; }
+
+        public string? Title { get; init; }
+        public int? Count { get; init; }
     }
 }

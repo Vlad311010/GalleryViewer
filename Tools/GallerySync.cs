@@ -96,7 +96,7 @@ namespace Tools
                     }
                     else
                     {
-                        groupPositionOffset = await gropusService.AssetsCount(group!.Id);
+                        groupPositionOffset = await gropusService.AssetsCountAsync(group!.Id);
                     }
 
                     await CreateAssets(gallery, new FilesGroup(filesGroup.Folder, [.. missingAssetPaths]), group, groupPositionOffset);

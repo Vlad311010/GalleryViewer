@@ -15,7 +15,7 @@ namespace App
             this.context = context;
         }
 
-        public async Task<PagedData<DisplayItemDto>> ListAsync(FilterDto filter)
+        public async Task<PagedData<DisplayItemDto>> ListAsync(BaseFilterDto filter)
         {
             var displayItemKeys = context.Assets
                 // .Where(...) // filtering
@@ -89,6 +89,44 @@ namespace App
             }
 
             return new(displayItems, filter.Skip, filter.Take, totalCount);
+        }
+
+
+        public async Task<PagedData<DisplayItemDto>> ListGroupAssetsAsync(int groupId, BaseFilterDto filter)
+        {
+            IQueryable<Asset> groupAssets = context.Assets
+                .Where(x => x.GroupId == groupId);
+            // .ToArrayAsync();
+
+            int totalItems = groupAssets.Count();
+
+            Asset[] takenAssets = await groupAssets
+                .Skip(filter.Skip)
+                .Take(filter.Take)
+                .ToArrayAsync();
+
+
+            return new PagedData<DisplayItemDto>(
+                takenAssets.Select(x => ToDisplayItemDto(x)),
+                filter.Skip,
+                filter.Take,
+                totalItems
+            );
+        }
+
+        private DisplayItemDto ToDisplayItemDto(Asset asset)
+        {
+            ArgumentNullException.ThrowIfNull(asset);
+
+            return new DisplayItemDto()
+            {
+                Type = DisplayItemType.Asset,
+                Id = asset.Id,
+                CreationTime = asset.CreationTime,
+                ImportTime = asset.ImportTime,
+                Title = null,
+                Count = null
+            };
         }
     }
 }

@@ -28,6 +28,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<AssetsCatalogContext>();
 
 // Services
+builder.Services.AddTransient<AssetsService>();
 builder.Services.AddTransient<FilterService>();
 builder.Services.AddTransient<PreviewCreatorService>();
 builder.Services.AddTransient<MediaService>();
