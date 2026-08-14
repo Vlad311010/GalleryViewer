@@ -2,13 +2,13 @@
 {
     public record TagDto
     {
-        public int Id { get; set; }
+        public int Id { get; init; }
 
-        public string Name { get; set; } = null!;
+        public string Name { get; init; } = null!;
 
-        public int CategoryId { get; set; }
+        public int CategoryId { get; init; }
 
-        public int? CanonicalId { get; set; }
+        public int? CanonicalId { get; init; }
 
         public bool IsCanonocal => !CanonicalId.HasValue;
     }

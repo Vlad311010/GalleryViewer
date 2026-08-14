@@ -10,12 +10,12 @@ namespace GalleryViewer.Controllers
 
     public class AssetBrowserController(FilterService filterService, AssetsService assetsService) : BaseController
     {
-        [HttpGet()]
+        [HttpGet]
         [ProducesResponseType<PagedData<DisplayItemResponseModel>>(StatusCodes.Status200OK)]
         [EndpointName("listItems")]
         public async Task<IActionResult> ListGalleryItems([FromQuery] BaseFilterRequestModel request)
         {
-            BaseFilterDto filter = new() { Skip = request.Skip, Take = request.Take };
+            PaginationDto filter = new() { Skip = request.Skip, Take = request.Take };
             var result = await filterService.ListAsync(filter);
 
             return Ok(
@@ -31,7 +31,7 @@ namespace GalleryViewer.Controllers
                 [FromQuery] BaseFilterRequestModel filterRequest
             )
         {
-            BaseFilterDto filter = new() { Skip = filterRequest.Skip, Take = filterRequest.Take };
+            PaginationDto filter = new() { Skip = filterRequest.Skip, Take = filterRequest.Take };
             var result = await filterService.ListGroupAssetsAsync(groupId, filter);
 
             return Ok(

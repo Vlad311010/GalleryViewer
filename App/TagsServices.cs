@@ -1,9 +1,11 @@
-﻿using App.Dto.Tag;
+﻿using App.Dto.Filter;
+using App.Dto.Tag;
 using App.Exceptions;
 using App.Mappers;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Shared;
+using Shared.Models;
 
 namespace App
 {
@@ -51,6 +53,59 @@ namespace App
                     CanonicalName = x.CanonicalName
                 }
             ).ToArray();
+        }
+
+        public async Task CreateAsync(TagDtoCreate tagDtoCreate)
+        {
+            TagCategory? tagCategory = await context.TagCategories
+                .AsNoTracking()
+                .Where(x => x.Name == tagDtoCreate.Category)
+                .SingleOrDefaultAsync();
+
+            EntityNotFoundException<TagCategory>.ThrowIfNull(tagCategory, tagDtoCreate.Category);
+
+
+            // TODO: validation && minor formating
+
+            Tag tagEntity = new Tag
+            {
+                Name = tagDtoCreate.Name,
+                CategoryId = tagCategory.Id,
+                CanonicalId = tagDtoCreate.CanonicalId,
+            };
+
+            context.Tags.Add(tagEntity);
+        }
+
+        public async Task<PagedData<TagDtoInfo>> ListAsync(PaginationDto paginationDto)
+        {
+            var tags = await context.Tags
+                .AsNoTracking()
+                .OrderBy(x => x.Name) // TODO:? implement orderby parameter
+                .Skip(paginationDto.Skip)
+                .Take(paginationDto.Take)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Name,
+                    CategoryName = x.Category.Name,
+                    CananicalId = x.CanonicalId,
+                    OccurrencesCount = context.AssetTags.Count(at => at.TagId == x.Id || at.Tag.CanonicalId == x.Id),
+                })
+                .ToArrayAsync();
+
+
+            int totalCount = await context.Tags.CountAsync();
+            TagDtoInfo[] seletedTags = [.. tags.Select(x => new TagDtoInfo
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Category = x.CategoryName,
+                Occurrences = x.OccurrencesCount,
+                CanonicalId = x.CananicalId
+            })];
+
+            return new PagedData<TagDtoInfo>(seletedTags, paginationDto.Skip, paginationDto.Take, totalCount);
         }
 
     }

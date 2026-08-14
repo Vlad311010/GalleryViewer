@@ -1,4 +1,4 @@
-﻿namespace GalleryViewer.Models.Request
+﻿namespace GalleryViewer.Models.Response
 {
     public record TagSearchResponseModel
     {
