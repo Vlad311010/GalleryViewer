@@ -2,6 +2,6 @@
 {
     public record TagCreateRequestModel(
         string Name,
-        string Categoty
+        string Category
     );
 }

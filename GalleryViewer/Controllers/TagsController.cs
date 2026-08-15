@@ -47,5 +47,18 @@ namespace GalleryViewer.Controllers
                 })
             );
         }
+
+        [HttpPost]
+        [EndpointName("tagCreate")]
+        [ProducesResponseType<TagCreateResponseModel>(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Create([FromBody] TagCreateRequestModel request)
+        {
+            TagDtoCreate createDto = new TagDtoCreate { Name = request.Name, Category = request.Category, CanonicalId = null };
+            TagDtoInfo tag = await tagsServices.CreateAndSaveAsync(createDto);
+
+
+            return Created((string)null!, new TagCreateResponseModel(tag.Id, tag.Name, tag.Category));
+        }
     }
 }

@@ -55,7 +55,7 @@ namespace App
             ).ToArray();
         }
 
-        public async Task CreateAsync(TagDtoCreate tagDtoCreate)
+        public async Task<TagDtoInfo> CreateAndSaveAsync(TagDtoCreate tagDtoCreate)
         {
             TagCategory? tagCategory = await context.TagCategories
                 .AsNoTracking()
@@ -66,15 +66,30 @@ namespace App
 
 
             // TODO: validation && minor formating
+            if (await context.Tags.Where(x => x.Name == tagDtoCreate.Name).AnyAsync())
+            {
+                throw new Exception("TODO: custom exception");
+            }
 
-            Tag tagEntity = new Tag
+
+            Tag entity = new Tag
             {
                 Name = tagDtoCreate.Name,
                 CategoryId = tagCategory.Id,
                 CanonicalId = tagDtoCreate.CanonicalId,
             };
 
-            context.Tags.Add(tagEntity);
+            context.Tags.Add(entity);
+
+            await context.SaveChangesAsync();
+
+            return new TagDtoInfo
+            {
+                Id = entity.Id,
+                Name = entity.Name,
+                Category = tagCategory.Name,
+                CanonicalId = null
+            };
         }
 
         public async Task<PagedData<TagDtoInfo>> ListAsync(PaginationDto paginationDto)
