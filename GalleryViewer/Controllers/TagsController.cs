@@ -11,7 +11,8 @@ namespace GalleryViewer.Controllers
     public class TagsController(TagsServices tagsServices) : BaseController
     {
         [HttpGet("search")]
-        [ProducesResponseType<PagedData<TagSearchResponseModel>>(StatusCodes.Status200OK)]
+        [EndpointName("searchTags")]
+        [ProducesResponseType<IEnumerable<TagSearchResponseModel>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Search([FromQuery] string value, [FromQuery] int take = 5)
         {
             var tags = await tagsServices.SearchAsync(value, take);

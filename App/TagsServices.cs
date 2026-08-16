@@ -21,12 +21,16 @@ namespace App
 
         public async Task<IEnumerable<TagDtoSearch>> SearchAsync(string searchValue, int take)
         {
+            string searchValueClean = searchValue.Replace(Constants.TAG_SPACE_CHARACTER, Constants.SPACE_CHARACTER);
             string[] searchKeys = searchValue.Split(Constants.TAG_SPACE_CHARACTER, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
             var tags = await context.Tags
                 .AsNoTracking()
-                .Where(x => searchKeys.Any(k =>
+                /*.Where(x => searchKeys.Any(k =>
                     x.Name.Contains(k))
+                )*/
+                .Where(x => searchKeys.Any(k => // searchKey match againts every separate word in tag.
+                    x.Name.StartsWith(k) ||
+                    x.Name.Contains(Constants.SPACE_CHARACTER + k))
                 )
                 .Select(x => new
                 {
@@ -37,7 +41,8 @@ namespace App
                     OccurrencesCount = context.AssetTags.Count(at => at.TagId == x.Id || at.Tag.CanonicalId == x.Id),
                     CanonicalName = x.Canonical == null ? null : x.Canonical.Name
                 })
-                .OrderByDescending(x => x.OccurrencesCount)
+                .OrderByDescending(x => x.Name.StartsWith(searchValueClean))
+                .ThenByDescending(x => x.OccurrencesCount)
                 .ThenBy(x => x.Name)
                 .Take(take)
                 .ToArrayAsync();
