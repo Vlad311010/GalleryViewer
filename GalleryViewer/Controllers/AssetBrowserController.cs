@@ -1,5 +1,6 @@
 ﻿using App;
 using App.Dto.Filter;
+using GalleryViewer.Helpers;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -13,15 +14,22 @@ namespace GalleryViewer.Controllers
         [HttpGet]
         [ProducesResponseType<PagedData<DisplayItemResponseModel>>(StatusCodes.Status200OK)]
         [EndpointName("listItems")]
-        public async Task<IActionResult> ListGalleryItems([FromQuery] BaseFilterRequestModel request)
+        public async Task<IActionResult> ListGalleryItems([FromQuery] GalleryFilterRequestModel request)
         {
             PaginationDto filter = new() { Skip = request.Skip, Take = request.Take };
-            var result = await filterService.ListAsync(filter);
+            TagFiltersDto tagFilters = new TagFiltersDto
+            {
+                Tags = request.Tags?.Select(x => x.NormalizeTag()).ToArray() ?? [],
+                ExcludeTags = request.ExcludeTags?.Select(x => x.NormalizeTag()).ToArray() ?? []
+            };
+
+            var result = await filterService.ListAsync(filter, tagFilters);
 
             return Ok(
                 result.Cast(ToDisplayItemResponseModel)
             );
         }
+
 
         [HttpGet("group/{groupId}")]
         [ProducesResponseType<PagedData<DisplayItemResponseModel>>(StatusCodes.Status200OK)]

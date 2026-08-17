@@ -15,10 +15,57 @@ namespace App
             this.context = context;
         }
 
-        public async Task<PagedData<DisplayItemDto>> ListAsync(PaginationDto filter)
+        public async Task<PagedData<DisplayItemDto>> ListAsync(PaginationDto filter, TagFiltersDto tagFilters)
         {
-            var displayItemKeys = context.Assets
-                // .Where(...) // filtering
+            ArgumentNullException.ThrowIfNull(filter);
+            ArgumentNullException.ThrowIfNull(tagFilters);
+
+            var query = context.Assets.AsQueryable();
+            // .Where(x => x.GalleryId == XXX)
+
+
+            string[] tags = tagFilters.Tags
+                .Concat(tagFilters.ExcludeTags)
+                .Distinct()
+                .ToArray();
+
+            Tag[] existingTags = await context.Tags
+                .AsNoTracking()
+                .Where(x => tags.Contains(x.Name))
+                .ToArrayAsync();
+
+            if (existingTags.Length != tags.Length)
+            {
+                return new(Array.Empty<DisplayItemDto>(), filter.Skip, filter.Take, 0);
+            }
+
+            int[] includeTagIds = existingTags
+                .Where(x => tagFilters.Tags.Contains(x.Name) && !tagFilters.ExcludeTags.Contains(x.Name))
+                .Select(x => x.Id)
+                .ToArray();
+
+            int[] excludeTagIds = existingTags
+                .Where(x => tagFilters.ExcludeTags.Contains(x.Name))
+                .Select(x => x.Id)
+                .ToArray();
+
+
+            if (includeTagIds.Length + excludeTagIds.Length > 0)
+            {
+                query = query.Where(asset =>
+                    includeTagIds
+                        .All(tagId => context.AssetTags.Any(at =>
+                            at.AssetId == asset.Id &&
+                            at.TagId == tagId))
+                    &&
+                    excludeTagIds
+                        .All(tagId => !context.AssetTags.Any(at =>
+                            at.AssetId == asset.Id &&
+                            at.TagId == tagId)));
+            }
+
+
+            var displayItemKeys = query
                 .OrderBy(x => x.Id)
                 .GroupBy(a => new
                 {
@@ -36,6 +83,7 @@ namespace App
                 .Take(filter.Take)
                 .ToListAsync();
 
+            // TODO: move everything below to separate method ItemKeysToDisplayItems(pageDisplayItemKeys);
 
             // TODO:? group unfolding logic
 
