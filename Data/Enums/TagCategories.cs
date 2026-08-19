@@ -6,6 +6,6 @@
         Author,
         Source,
         Character,
-        Description
+        General
     }
 }

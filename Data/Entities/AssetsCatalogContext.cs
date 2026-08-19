@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace Data.Entities;
 
@@ -59,7 +57,7 @@ public partial class AssetsCatalogContext : DbContext
 
         modelBuilder.Entity<AssetTag>(entity =>
         {
-            entity.HasNoKey();
+            entity.HasKey(x => new { x.AssetId, x.TagId });
 
             entity.HasIndex(e => new { e.AssetId, e.TagId }, "ImageTags_ImageId_IDX").IsUnique();
 
@@ -68,6 +66,8 @@ public partial class AssetsCatalogContext : DbContext
             entity.HasOne(d => d.Asset).WithMany().HasForeignKey(d => d.AssetId);
 
             entity.HasOne(d => d.Tag).WithMany().HasForeignKey(d => d.TagId);
+
+
         });
 
         modelBuilder.Entity<Gallery>(entity =>

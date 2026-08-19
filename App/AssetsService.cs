@@ -1,5 +1,7 @@
 ﻿using App.Dto;
 using App.Dto.Asset;
+using App.Dto.Tag;
+using App.Exceptions;
 using App.Extensions;
 using App.Mappers;
 using App.Utils;
@@ -95,5 +97,93 @@ namespace App
                 x.GalleryId == galleryId
                 && x.RelativePath == relativePath);
         }
+
+
+        public async Task<AssetTagsDto> GetAssetTags(int assetId)
+        {
+            Asset? asset = await context.Assets.FindAsync(assetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+
+
+            int[] tagIds = await context.AssetTags
+               .Where(at => at.AssetId == asset.Id)
+               .Select(at => at.TagId)
+               .ToArrayAsync();
+
+
+            Dictionary<string, TagDtoInfo[]> assetTags = await context.Tags
+                .Where(t => tagIds.Contains(t.Id))
+                .Select(t => new TagDtoInfo
+                {
+                    Id = t.Id,
+                    Name = t.Name,
+                    Category = t.Category.Name,
+                    CanonicalId = t.CanonicalId,
+                    CanonicalName = t.Canonical != null ? t.Canonical.Name : null,
+                    Occurrences = context.AssetTags.Count(at => at.TagId == t.Id || at.Tag.CanonicalId == t.Id),
+                })
+                .GroupBy(t => t.Category)
+                .ToDictionaryAsync(
+                    g => g.Key,
+                    g => g.OrderBy(x => x.Name).ToArray());
+
+
+
+            return new AssetTagsDto(assetTags);
+        }
+
+
+        public async Task AddTags(int assetId, string[] tags)
+        {
+            Asset? asset = await context.Assets.FindAsync(assetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+
+            tags = tags
+                .Distinct()
+                .ToArray();
+
+            int[] existingTags = await context.Tags
+                .Where(x => tags.Contains(x.Name))
+                .Select(x => x.Id)
+                .ToArrayAsync();
+
+            if (existingTags.Length != tags.Length)
+            {
+                // TODO: thow exception with information which tags are invalid
+                return;
+            }
+
+
+            int[] duplicatedTags = await context.AssetTags
+                .Where(x => x.AssetId == assetId && existingTags.Contains(x.TagId))
+                .Select(x => x.TagId)
+                .ToArrayAsync();
+
+            int[] tagsToAdd = [.. existingTags.Where(x => !duplicatedTags.Contains(x))];
+
+            foreach (var tag in tagsToAdd)
+            {
+                context.AssetTags.Add(new AssetTag { AssetId = assetId, TagId = tag });
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        public async Task RemoveTag(int assetId, string tag)
+        {
+            Asset? asset = await context.Assets.FindAsync(assetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+
+            Tag? tagEntity = await context.Tags
+                .AsNoTracking()
+                .Where(x => x.Name == tag)
+                .SingleOrDefaultAsync();
+            EntityNotFoundException<Tag>.ThrowIfNull(tag, tag);
+
+            context.AssetTags.Remove(new AssetTag { AssetId = assetId, TagId = tagEntity.Id });
+
+            await context.SaveChangesAsync();
+        }
+
     }
 }

@@ -7,6 +7,7 @@
         public string Category { get; init; } = null!;
         public int Occurrences { get; init; }
         public int? CanonicalId { get; init; }
+        public string? CanonicalName { get; init; }
 
         public bool IsCanonical => !CanonicalId.HasValue;
     }

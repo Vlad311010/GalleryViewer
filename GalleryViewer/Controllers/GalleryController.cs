@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Controllers
 {
+    [Produces("application/json")]
     public class GalleryController(GalleriesService galleriesService) : BaseController
     {
         [HttpGet]

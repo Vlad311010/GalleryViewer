@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Controllers
 {
-    [Produces("application/octet-stream")]
+
     public class MediaController(MediaService mediaService) : BaseController
     {
+        [Produces("application/octet-stream")]
         [HttpGet("{id}")]
         [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
         [EndpointName("asset")]
@@ -18,6 +19,7 @@ namespace GalleryViewer.Controllers
             return File(response.MediaStream, response.MimeType, true);
         }
 
+        [Produces("application/octet-stream")]
         [HttpGet("asset/preview/{id}")]
         [EndpointName("assetPreview")]
         [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
@@ -29,7 +31,7 @@ namespace GalleryViewer.Controllers
             return File(response.MediaStream, response.MimeType, true);
         }
 
-
+        [Produces("application/octet-stream")]
         [HttpGet("group/preview/{id}")]
         [EndpointName("groupPreview")]
         [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
@@ -41,5 +43,16 @@ namespace GalleryViewer.Controllers
             return File(response.MediaStream, response.MimeType, true);
         }
 
+        [Produces("text/plain")]
+        [HttpGet("asset/{id}/mime-type")]
+        [EndpointName("assetMimeType")]
+        [ProducesResponseType<string>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMimeType([FromRoute] int id)
+        {
+            var requestDto = new AssetMediaDtoFetch(id);
+            var mimeType = await mediaService.GetAssetMimeType(requestDto);
+
+            return Ok(mimeType);
+        }
     }
 }

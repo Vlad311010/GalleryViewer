@@ -8,7 +8,7 @@ using Shared.Models;
 
 namespace GalleryViewer.Controllers
 {
-
+    [Produces("application/json")]
     public class AssetBrowserController(FilterService filterService, AssetsService assetsService) : BaseController
     {
         [HttpGet]

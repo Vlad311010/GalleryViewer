@@ -8,6 +8,7 @@ using Shared.Models;
 
 namespace GalleryViewer.Controllers
 {
+    [Produces("application/json")]
     public class TagsController(TagsServices tagsServices) : BaseController
     {
         [HttpGet("search")]
@@ -25,6 +26,7 @@ namespace GalleryViewer.Controllers
                     Category = x.Category,
                     IsCanonical = x.IsCanonical,
                     CanonicalName = x.CanonicalName,
+                    Occurrences = x.Occurrences
                 }).ToArray()
             );
         }

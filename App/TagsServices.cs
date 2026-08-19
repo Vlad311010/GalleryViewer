@@ -110,6 +110,7 @@ namespace App
                     x.Name,
                     CategoryName = x.Category.Name,
                     CananicalId = x.CanonicalId,
+                    CanonicalName = x.Canonical != null ? x.Canonical.Name : "null",
                     OccurrencesCount = context.AssetTags.Count(at => at.TagId == x.Id || at.Tag.CanonicalId == x.Id),
                 })
                 .ToArrayAsync();
@@ -122,11 +123,11 @@ namespace App
                 Name = x.Name,
                 Category = x.CategoryName,
                 Occurrences = x.OccurrencesCount,
-                CanonicalId = x.CananicalId
+                CanonicalId = x.CananicalId,
+                CanonicalName = x.CanonicalName
             })];
 
             return new PagedData<TagDtoInfo>(seletedTags, paginationDto.Skip, paginationDto.Take, totalCount);
         }
-
     }
 }
