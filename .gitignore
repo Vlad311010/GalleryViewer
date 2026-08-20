@@ -366,3 +366,5 @@ FodyWeavers.xsd
 /Tools/appsettings.Development.json
 /Tools/appsettings.json
 /Tools/SyncConfig.json
+/publish.ps1
+/publish.ps1
