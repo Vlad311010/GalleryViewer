@@ -2,6 +2,7 @@ using App;
 using App.PreviewCreation;
 using App.Settings;
 using Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +26,9 @@ builder.Services.AddCors(options =>
 });
 
 // DB
-builder.Services.AddDbContext<AssetsCatalogContext>();
+builder.Services.AddDbContext<AssetsCatalogContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("GalleryViewer")));
 
 // Services
 builder.Services.AddTransient<AssetsService>();
@@ -56,6 +59,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseCors("frontend");
 
+app.UseStaticFiles();
+
 app.UseHttpsRedirection();
 
 app.UseRouting();
@@ -66,5 +71,6 @@ app.MapStaticAssets();
 
 app.MapControllers();
 
+app.MapFallbackToFile("index.html");
 
 app.Run();

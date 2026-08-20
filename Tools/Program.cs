@@ -1,36 +1,23 @@
-﻿/*using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-
-var builder = Host.CreateApplicationBuilder(args);
-
-builder.Services.AddData();
-builder.Services.AddApplication();
-
-var host = builder.Build();
-
-// var importer = host.Services.GetRequiredService<ImageImportService>();
-
-// await importer.ImportFolder(args[0]);
-*/
-
-
-using App;
-using App.PreviewCreation;
-using App.Settings;
+﻿using App.Settings;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Tools;
-using Tools.Models;
 
-var dbOptions = new DbContextOptionsBuilder<AssetsCatalogContext>()
-    .UseSqlite("Data Source=F:\\_saves\\DB\\GalleryViewerDataTest.db")
-    .Options;
+var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+var configPath = string.Equals(environment, Environments.Development, StringComparison.OrdinalIgnoreCase)
+    ? @".\appsettings.Development.json"
+    : @".\appsettings.json";
 
 var configuration = new ConfigurationBuilder()
-    .AddJsonFile(@"F:\_saves\.NET\GalleryViewer\Tools\appsettings.Development.json")
+    .AddJsonFile(configPath)
     .Build();
+
+var dbOptions = new DbContextOptionsBuilder<AssetsCatalogContext>()
+    .UseSqlite(configuration.GetConnectionString("GalleryViewer"))
+    .Options;
 
 PreviewSettings? previewSettings = configuration
     .GetSection(PreviewSettings.SectionName)
@@ -45,16 +32,13 @@ IOptions<PreviewSettings> previewSettingWrapper = Options.Create(previewSettings
 
 using var context = new AssetsCatalogContext(dbOptions);
 
-PreviewCreatorService previewCreatorService = new PreviewCreatorService(previewSettingWrapper);
-GalleriesService galleriesService = new GalleriesService(context);
-AssetsService imagesService = new AssetsService(context);
-GroupsService gropusService = new GroupsService(context);
-PersistenceService persistance = new PersistenceService(context);
-var initializer = new GallerySync(galleriesService, imagesService, previewCreatorService, gropusService, persistance);
+CompositionRoot root = new(context, previewSettings);
 
-var data = new GaleryInicializationData("Test", @"F:\_saves\imgTest");
 
-await initializer.SyncronizeGalleryAsync(data);
+// GallerySync initializer = root.CreateGallerySync();
 
-return 0;
+
+return await CommandProcessor.Run(args, root);
+
+
 

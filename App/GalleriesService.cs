@@ -1,4 +1,5 @@
 ﻿using App.Dto.Gallery;
+using App.Exceptions;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +35,13 @@ namespace App
             return galleries.Select(x => new GalleryDto(x.Id, x.Name, x.Path, x.CoverSourceId));
         }
 
+        public async Task SetPreviewAssetAsync(string galleryName, int coverSourceId)
+        {
+            Gallery? entity = await context.Galleries.SingleOrDefaultAsync(x => x.Name == galleryName);
+            EntityNotFoundException<Gallery>.ThrowIfNull(entity, galleryName);
 
-
+            entity.CoverSourceId = coverSourceId;
+            await context.SaveChangesAsync();
+        }
     }
 }

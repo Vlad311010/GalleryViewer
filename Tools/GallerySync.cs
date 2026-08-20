@@ -16,29 +16,44 @@ namespace Tools
         PersistenceService persistence)
     {
 
-        public async Task SyncronizeGalleryAsync(GaleryInicializationData data)
+        public async Task SyncronizeGalleryAsync(GallerySyncData syncData)
         {
-            IEnumerable<FilesGroup> files = GetFiles(data);
-            // TODO: verify
-
-            if (files.Count() == 0)
+            foreach (var galleryData in syncData.Galeries)
             {
-                return; // TODO: Meaningfull error
+
+                IEnumerable<FilesGroup> files = GetFiles(galleryData);
+
+                if (files.Count() == 0)
+                {
+                    Loggining.Log($"Skipping {galleryData.Name} as {galleryData.Path} does not contain any file");
+                    continue;
+                }
+
+
+                GalleryDto? gallery = await galleriesService.GetByNameAsync(galleryData.Name);
+                if (gallery == null)
+                {
+                    GalleryDtoCreate galleryCreate = new GalleryDtoCreate(galleryData.Name, galleryData.Path);
+                    gallery = await galleriesService.CreateAndSaveAsync(galleryCreate);
+                    Loggining.Log($"Created gallery {gallery.Name} with path: {gallery.Path}");
+                }
+                else
+                {
+                    if (!IsMatchesWithConfig(gallery, galleryData))
+                    {
+                        Loggining.Warning($"Skipping {gallery.Name}.\n" +
+                            $"Existing gallery mistmaches with provided in config." +
+                            $"\n{gallery.Name}=={galleryData.Name}\n{gallery.Path}=={galleryData.Path}");
+                        continue;
+                    }
+                    Loggining.Log($"Gallery {gallery.Name} with path: {gallery.Path} alredy exists.\nSynchronize...");
+                }
+
+
+                await AddAssetsAsync(gallery, files);
+
+                await persistence.SaveChangesAsync();
             }
-
-
-            GalleryDto? gallery = await galleriesService.GetByNameAsync(data.Name);
-            if (gallery == null)
-            {
-                GalleryDtoCreate galleryCreate = new GalleryDtoCreate(data.Name, data.Path);
-                gallery = await galleriesService.CreateAndSaveAsync(galleryCreate);
-                Debug.Log($"Gallery created {gallery.Name} {gallery.Path}");
-            }
-
-
-            await AddAssetsAsync(gallery, files);
-
-            await persistence.SaveChangesAsync();
         }
 
         private async Task AddAssetsAsync(GalleryDto gallery, IEnumerable<FilesGroup> filesGroups)
@@ -64,7 +79,7 @@ namespace Tools
                 AssetGroupDto? group = await gropusService.GetPhysicalGroup(gallery.Id, filesGroup.Folder);
                 if (group == null)
                 {
-                    Debug.Log($"New group {filesGroup.Folder}");
+                    Loggining.Log($"New group {filesGroup.Folder}");
                     await CreateGroupAsync(gallery, filesGroup);
                 }
                 else if (!gropusService.IsSynchronized(group, filesGroup.Files, out List<AssetSynchronizationDto> outOfSyncAsset))// out of sync
@@ -75,12 +90,12 @@ namespace Tools
                     {
                         if (asset.Type == App.Enum.SyncMismatchType.OnlyDb) // files were removed from file system
                         {
-                            Debug.Log($"Asset to Remove Id:{asset.id!.Value}  group:{group!.Id}");
+                            Loggining.Log($"Asset to Remove Id:{asset.id!.Value}  group:{group!.Id}");
                             assetIdsToDelete.Add(asset.id!.Value);
                         }
                         else if (asset.Type == App.Enum.SyncMismatchType.OnlyFileSystem) // new files added inside folder in file system
                         {
-                            Debug.Log($"Asset to Add group:{group!.Id}");
+                            Loggining.Log($"Asset to Add group:{group!.Id}");
                             missingAssetPaths.Add(asset.RelativePath);
                         }
                     }
@@ -104,10 +119,11 @@ namespace Tools
                     {
                         // create
                     }
+
                 }
                 else // fine and up to date 
                 {
-                    Debug.Log($"Group is insync id:{group.Id}");
+                    Loggining.Log($"Group is insync id:{group.Id}");
                 }
             }
         }
@@ -130,11 +146,11 @@ namespace Tools
                 string relativePath = filesGroup.Files[i];
                 if (await assetsService.Exists(gallery.Id, relativePath))
                 {
-                    Debug.Log($"Skip asset {relativePath}");
+                    Loggining.Log($"\tSkip asset {relativePath}");
                     continue; // TODO:? maybe update some data
                 }
 
-                Debug.Log($"Create asset {relativePath}");
+                Loggining.Log($"\tCreate asset {relativePath}");
                 string assetFilePath = Path.Combine(gallery.Path, relativePath);
                 string previewPath = await previewCreatorService.CreatePreviewAsync(gallery.Path, assetFilePath);
 
@@ -143,12 +159,15 @@ namespace Tools
             }
         }
 
-        private IEnumerable<FilesGroup> GetFiles(GaleryInicializationData data)
+        private IEnumerable<FilesGroup> GetFiles(GaleryData data)
         {
             string root = @$"{data.Path}";
+            if (!Directory.Exists(root))
+            {
+                return [];
+            }
 
             var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm" };
-            // var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
 
             SearchOption searchOption = SearchOption.AllDirectories;
 
@@ -173,17 +192,22 @@ namespace Tools
                 );
 
 
-            foreach (var group in files)
+            /*foreach (var group in files)
             {
-                Debug.Log($"[{group.Folder}]");
+                Loggining.Log($"[{group.Folder}]");
 
                 foreach (var file in group.Files)
                 {
-                    Debug.Log($"\t{file}");
+                    Loggining.Log($"\t{file}");
                 }
-            }
+            }*/
 
             return files;
+        }
+
+        private static bool IsMatchesWithConfig(GalleryDto gallery, GaleryData galleryConfigData)
+        {
+            return string.Equals(gallery.Name, galleryConfigData.Name, StringComparison.OrdinalIgnoreCase) && gallery.Path == galleryConfigData.Path;
         }
 
         private record FilesGroup(string Folder, string[] Files);

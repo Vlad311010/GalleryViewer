@@ -8,6 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="SyncConfig.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="SyncConfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.10" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.10" />
@@ -15,6 +26,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\App\App.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
