@@ -8,6 +8,7 @@ dotnet publish "$PSScriptRoot\GalleryViewer\GalleryViewer.csproj" `
     -r win-x64 `
     --self-contained true `
     -p:PublishSingleFile=true `
+	-p:ExcludeDevelopmentSettings=true `
     -o $publishDir
 
 if ($LASTEXITCODE -ne 0) {
