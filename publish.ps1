@@ -1,0 +1,31 @@
+$ErrorActionPreference = "Stop"
+
+$publishDir = "path"
+
+# Publish GalleryViewer(API)
+dotnet publish "$PSScriptRoot\GalleryViewer\GalleryViewer.csproj" `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -o $publishDir
+
+if ($LASTEXITCODE -ne 0) {
+    throw "GalleryViewer publish failed."
+}
+
+# Publish Tools
+dotnet publish "$PSScriptRoot\Tools\Tools.csproj" `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -o $publishDir
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Tools publish failed."
+}
+
+Write-Host ""
+Write-Host "Publish completed:"
+Get-ChildItem $publishDir

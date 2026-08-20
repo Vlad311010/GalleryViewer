@@ -1,7 +1,11 @@
 {
   "profiles": {
     "Tools": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "sync ./SyncConfig.json",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
     },
     "WSL": {
       "commandName": "WSL2",
