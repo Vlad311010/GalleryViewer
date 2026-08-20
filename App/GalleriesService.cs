@@ -11,7 +11,7 @@ namespace App
         {
             Gallery entity = new Gallery
             {
-                Name = dto.Name,
+                Name = dto.Name.ToLower(),
                 Path = dto.Path
             };
 
@@ -35,10 +35,11 @@ namespace App
             return galleries.Select(x => new GalleryDto(x.Id, x.Name, x.Path, x.CoverSourceId));
         }
 
-        public async Task SetPreviewAssetAsync(string galleryName, int coverSourceId)
+        public async Task SetPreviewAssetAsync(int galleryId, int coverSourceId)
         {
-            Gallery? entity = await context.Galleries.SingleOrDefaultAsync(x => x.Name == galleryName);
-            EntityNotFoundException<Gallery>.ThrowIfNull(entity, galleryName);
+            Gallery? entity = await context.Galleries.FindAsync(galleryId);
+            EntityNotFoundException<Gallery>.ThrowIfNull(entity, galleryId);
+
 
             entity.CoverSourceId = coverSourceId;
             await context.SaveChangesAsync();

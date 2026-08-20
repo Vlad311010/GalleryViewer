@@ -26,6 +26,15 @@ namespace App
             return true;
         }
 
+        public async Task<AssetDto?> GetByPathAsync(int galleryId, string relativePath)
+        {
+            Asset? asset = await context.Assets
+                .SingleOrDefaultAsync(x => x.GalleryId == galleryId && x.RelativePath == relativePath);
+
+            return asset?.ToAssetDto();
+        }
+
+
         public async Task<AssetDto> CreateAssetAsync(AssetDtoCreate dto)
         {
             Gallery? targetGallery = await context.Galleries.FindAsync(dto.GalleryId);

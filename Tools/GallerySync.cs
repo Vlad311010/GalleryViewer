@@ -29,10 +29,11 @@ namespace Tools
                     continue;
                 }
 
-
+                bool requiresInitialThumbnail = false;
                 GalleryDto? gallery = await galleriesService.GetByNameAsync(galleryData.Name);
                 if (gallery == null)
                 {
+                    requiresInitialThumbnail = true;
                     GalleryDtoCreate galleryCreate = new GalleryDtoCreate(galleryData.Name, galleryData.Path);
                     gallery = await galleriesService.CreateAndSaveAsync(galleryCreate);
                     Loggining.Log($"Created gallery {gallery.Name} with path: {gallery.Path}");
@@ -53,6 +54,26 @@ namespace Tools
                 await AddAssetsAsync(gallery, files);
 
                 await persistence.SaveChangesAsync();
+
+                string? thumbnailFile = galleryData.ThumbnailFile;
+                if (requiresInitialThumbnail)
+                {
+                    thumbnailFile ??= files.First().Files.First();
+                }
+
+                if (thumbnailFile != null)
+                {
+                    var thumbnailAsset = await assetsService.GetByPathAsync(gallery.Id, thumbnailFile);
+                    if (thumbnailAsset == null)
+                    {
+                        Loggining.Error($"Asset with path: {thumbnailFile} does not exist in gallery {gallery.Name}(Id: {gallery.Id})");
+                    }
+                    else if (thumbnailAsset.Id != gallery.CoverAssetId)
+                    {
+                        await galleriesService.SetPreviewAssetAsync(gallery.Id, thumbnailAsset.Id);
+                        await persistence.SaveChangesAsync();
+                    }
+                }
             }
         }
 
@@ -159,7 +180,7 @@ namespace Tools
             }
         }
 
-        private IEnumerable<FilesGroup> GetFiles(GaleryData data)
+        private static IEnumerable<FilesGroup> GetFiles(GaleryData data)
         {
             string root = @$"{data.Path}";
             if (!Directory.Exists(root))

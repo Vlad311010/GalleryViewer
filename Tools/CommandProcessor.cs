@@ -6,35 +6,44 @@ namespace Tools
 {
     internal static class CommandProcessor
     {
-        enum Commands
-        {
-            config,
-            single
-        }
 
-        [Verb("sync", HelpText = "Synchronize galleries.")]
+        [Verb("sync", aliases: ["s"], HelpText = "Synchronize galleries.")]
         private class SyncOptions
         {
             [Value(0, MetaName = "path", Required = true, HelpText = "Path to config .json file")]
             public string ConfigPath { get; set; } = "";
         }
 
-        [Verb("help", isDefault: true, aliases: ["-h"], HelpText = "Displays help")]
-        private class HelpOptions
+        [Verb("preview", aliases: ["p"], HelpText = "Generates preview for given asset. Overrides existing one.")]
+        private class PreviewOptions
         {
-            [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
-            public bool Verbose { get; set; }
-            public Commands Command { get; set; }
+            [Value(0, MetaName = "asset", Required = true, HelpText = "Asset id")]
+            public int AssetId { get; set; }
         }
 
         public static async Task<int> Run(string[] args, CompositionRoot compositionRoot)
         {
+            if (args.Length == 0)
+            {
+                var parser = new Parser(with =>
+                {
+                    with.HelpWriter = Console.Out;
+                });
+
+                parser.ParseArguments<
+                    SyncOptions,
+                    PreviewOptions>(new[] { "--help" });
+                return 0;
+            }
+
             return await Parser.Default
                 .ParseArguments<
                     SyncOptions,
-                    HelpOptions>(args)
+                    PreviewOptions>(args)
                 .MapResult(
                     async (SyncOptions o) => await RunSync(o, compositionRoot),
+                    async (PreviewOptions o) => await RunPreview(o, compositionRoot),
+
                     errors => Task.FromResult(1));
         }
 
@@ -63,9 +72,9 @@ namespace Tools
             return 0;
         }
 
-        private static int RunHelp(HelpOptions options)
+        private static async Task<int> RunPreview(PreviewOptions options, CompositionRoot compositionRoot)
         {
-            Loggining.Log(nameof(RunHelp));
+            Loggining.Log(nameof(RunPreview));
             return 0;
         }
     }

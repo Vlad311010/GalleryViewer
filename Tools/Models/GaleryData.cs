@@ -7,6 +7,7 @@
     /// <param name="Path"></param>
     internal record GaleryData(
         string Name,
-        string Path
+        string Path,
+        string? ThumbnailFile = null
     );
 }
