@@ -66,19 +66,22 @@ namespace App
 
 
             var displayItemKeys = query
-                .OrderBy(x => x.Id)
+                .OrderByDescending(x => x.CreationTime)
+                .ThenBy(x => x.Id)
                 .GroupBy(a => new
                 {
                     IsGroup = a.GroupId.HasValue,
-                    Id = a.GroupId ?? a.Id
+                    Id = a.GroupId ?? a.Id,
                 })
                 .Select(g => new
                 {
                     g.Key.IsGroup,
-                    g.Key.Id
+                    g.Key.Id,
+                    CreationTime = g.Min(x => x.CreationTime)
                 });
 
             var pageDisplayItemKeys = await displayItemKeys
+                .OrderByDescending(x => x.CreationTime)
                 .Skip(filter.Skip)
                 .Take(filter.Take)
                 .ToListAsync();
@@ -136,6 +139,8 @@ namespace App
                     ImportTime = importTime,
                 });
             }
+
+            displayItems = displayItems.OrderByDescending(x => x.CreationTime).ToList();
 
             return new(displayItems, filter.Skip, filter.Take, totalCount);
         }
