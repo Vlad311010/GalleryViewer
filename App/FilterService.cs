@@ -1,5 +1,6 @@
 ﻿using App.Dto.Filter;
 using App.Enum;
+using App.Exceptions;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Shared.Models;
@@ -15,14 +16,17 @@ namespace App
             this.context = context;
         }
 
-        public async Task<PagedData<DisplayItemDto>> ListAsync(PaginationDto filter, TagFiltersDto tagFilters)
+        public async Task<PagedData<DisplayItemDto>> ListAsync(string galleryName, PaginationDto filter, TagFiltersDto tagFilters)
         {
+            ArgumentNullException.ThrowIfNullOrWhiteSpace(galleryName);
             ArgumentNullException.ThrowIfNull(filter);
             ArgumentNullException.ThrowIfNull(tagFilters);
 
-            var query = context.Assets.AsQueryable();
-            // .Where(x => x.GalleryId == XXX)
+            Gallery? gallery = await context.Galleries.SingleOrDefaultAsync(x => x.Name == galleryName);
+            EntityNotFoundException<Gallery>.ThrowIfNull(gallery, galleryName);
 
+            var query = context.Assets.AsQueryable()
+                .Where(x => x.GalleryId == gallery.Id);
 
             string[] tags = tagFilters.Tags
                 .Concat(tagFilters.ExcludeTags)

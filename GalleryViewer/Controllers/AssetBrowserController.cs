@@ -9,12 +9,12 @@ using Shared.Models;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class AssetBrowserController(FilterService filterService, AssetsService assetsService) : BaseController
+    public class AssetBrowserController(FilterService filterService) : BaseController
     {
-        [HttpGet]
+        [HttpGet("{gallery}")]
         [ProducesResponseType<PagedData<DisplayItemResponseModel>>(StatusCodes.Status200OK)]
         [EndpointName("listItems")]
-        public async Task<IActionResult> ListGalleryItems([FromQuery] GalleryFilterRequestModel request)
+        public async Task<IActionResult> ListGalleryItems([FromRoute] string gallery, [FromQuery] GalleryFilterRequestModel request)
         {
             PaginationDto filter = new() { Skip = request.Skip, Take = request.Take };
             TagFiltersDto tagFilters = new TagFiltersDto
@@ -23,7 +23,7 @@ namespace GalleryViewer.Controllers
                 ExcludeTags = request.ExcludeTags?.Select(x => x.NormalizeTag()).ToArray() ?? []
             };
 
-            var result = await filterService.ListAsync(filter, tagFilters);
+            var result = await filterService.ListAsync(gallery, filter, tagFilters);
 
             return Ok(
                 result.Cast(ToDisplayItemResponseModel)
