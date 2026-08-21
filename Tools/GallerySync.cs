@@ -171,7 +171,7 @@ namespace Tools
                     continue; // TODO:? maybe update some data
                 }
 
-                Loggining.Log($"\tCreate asset {relativePath}");
+                Loggining.Log($"\t Create asset {relativePath}");
                 string assetFilePath = Path.Combine(gallery.Path, relativePath);
                 string previewPath = await previewCreatorService.CreatePreviewAsync(gallery.Path, assetFilePath);
 
@@ -188,7 +188,7 @@ namespace Tools
                 return [];
             }
 
-            var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm" };
+            var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm", ".gif" };
 
             SearchOption searchOption = SearchOption.AllDirectories;
 
