@@ -1,5 +1,4 @@
-﻿using App.Dto;
-using App.Dto.Asset;
+﻿using App.Dto.Asset;
 using App.Dto.Tag;
 using App.Exceptions;
 using App.Extensions;
@@ -9,7 +8,7 @@ using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 
-namespace App
+namespace App.Services
 {
     public class AssetsService(AssetsCatalogContext context)
     {

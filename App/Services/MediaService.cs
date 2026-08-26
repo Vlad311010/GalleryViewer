@@ -5,7 +5,7 @@ using App.PreviewCreation;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace App
+namespace App.Services
 {
     public class MediaService(AssetsCatalogContext context)
     {

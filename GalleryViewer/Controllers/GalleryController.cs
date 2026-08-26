@@ -1,5 +1,5 @@
-﻿using App;
-using App.Dto.Gallery;
+﻿using App.Dto.Gallery;
+using App.Services;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 

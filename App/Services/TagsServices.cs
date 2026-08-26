@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Shared;
 using Shared.Models;
 
-namespace App
+namespace App.Services
 {
     public class TagsServices(AssetsCatalogContext context)
     {

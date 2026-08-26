@@ -1,5 +1,5 @@
-﻿using App;
-using App.Dto.Filter;
+﻿using App.Dto.Filter;
+using App.Services;
 using GalleryViewer.Helpers;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;

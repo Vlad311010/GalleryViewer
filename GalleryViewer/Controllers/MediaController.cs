@@ -1,5 +1,5 @@
-﻿using App;
-using App.Dto.Media;
+﻿using App.Dto.Media;
+using App.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Controllers

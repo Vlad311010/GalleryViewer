@@ -1,6 +1,6 @@
 ﻿using Data.Entities;
 
-namespace App
+namespace App.Services
 {
     public class PersistenceService
     {

@@ -1,6 +1,6 @@
-﻿using App;
-using App.Dto.Filter;
+﻿using App.Dto.Filter;
 using App.Dto.Tag;
+using App.Services;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;

@@ -1,4 +1,4 @@
-﻿namespace App.Dto
+﻿namespace App.Dto.Asset
 {
     public record AssetDtoCreate(
         int GalleryId,

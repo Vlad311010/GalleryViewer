@@ -5,7 +5,7 @@ using App.Exceptions;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace App
+namespace App.Services
 {
     public class GroupsService(AssetsCatalogContext context)
     {
