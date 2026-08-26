@@ -34,14 +34,31 @@ namespace App
             return asset?.ToAssetDto();
         }
 
+        public async Task<AssetGroupInfoDto?> GetAssetGroupInfo(int assetId)
+        {
+            Asset? asset = await context.Assets.FindAsync(assetId);
+
+            if (asset != null && asset.GroupId.HasValue)
+            {
+                int[] groupAssets = await context.Assets
+                    .Where(x => x.GroupId == asset.GroupId)
+                    .OrderBy(x => x.GroupPosition)
+                    .Select(x => x.Id)
+                    .ToArrayAsync();
+
+                return asset?.ToAssetGroupInfoDto(groupAssets);
+            }
+            else
+            {
+                return asset?.ToAssetGroupInfoDto(null);
+
+            }
+        }
 
         public async Task<AssetDto> CreateAssetAsync(AssetDtoCreate dto)
         {
             Gallery? targetGallery = await context.Galleries.FindAsync(dto.GalleryId);
-            if (targetGallery == null)
-            {
-                throw new ArgumentException("TODO: custom exception");
-            }
+            EntityNotFoundException<Gallery>.ThrowIfNull(targetGallery, dto.GalleryId);
 
             string assetFilePath = Path.Combine(targetGallery.Path, dto.RelativePath);
             if (!File.Exists(assetFilePath))
@@ -187,7 +204,7 @@ namespace App
                 .AsNoTracking()
                 .Where(x => x.Name == tag)
                 .SingleOrDefaultAsync();
-            EntityNotFoundException<Tag>.ThrowIfNull(tag, tag);
+            EntityNotFoundException<Tag>.ThrowIfNull(tagEntity, tag);
 
             context.AssetTags.Remove(new AssetTag { AssetId = assetId, TagId = tagEntity.Id });
 

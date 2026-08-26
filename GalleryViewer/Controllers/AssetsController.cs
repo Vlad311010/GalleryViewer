@@ -1,4 +1,5 @@
 ﻿using App;
+using App.Dto.Asset;
 using App.Dto.Tag;
 using GalleryViewer.Helpers;
 using GalleryViewer.Models.Response;
@@ -9,10 +10,34 @@ namespace GalleryViewer.Controllers
     [Produces("application/json")]
     public class AssetsController(AssetsService assetsService) : BaseController
     {
+        [HttpGet("{assetId}")]
+        [EndpointName("groupAssetInfo")]
+        [ProducesResponseType<AssetGroupPositionResponseModel>(StatusCodes.Status200OK)]
+        [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetAssetGroupPosition([FromRoute] int assetId)
+        {
+            AssetGroupInfoDto? assetGroupInfo = await assetsService.GetAssetGroupInfo(assetId);
+            if (assetGroupInfo == null)
+            {
+                return NotFound();
+            }
+
+            int? prevAssetId = assetGroupInfo.GroupId.HasValue ? assetGroupInfo.groupAssets.GetItemCircularly(assetGroupInfo.GroupPosition!.Value - 1) : null;
+            int? nextAssetId = assetGroupInfo.GroupId.HasValue ? assetGroupInfo.groupAssets.GetItemCircularly(assetGroupInfo.GroupPosition!.Value + 1) : null;
+            return Ok(new AssetGroupPositionResponseModel(
+                assetGroupInfo.AssetId,
+                assetGroupInfo.GroupId.HasValue,
+                assetGroupInfo.GroupId,
+                prevAssetId,
+                nextAssetId
+            ));
+        }
+
+
         [HttpGet("{assetId}/tags")]
         [EndpointName("assetTags")]
-        [ProducesResponseType<AssetTagsResponseModel>(StatusCodes.Status201Created)]
-        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<AssetTagsResponseModel>(StatusCodes.Status200OK)]
+        [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetTags([FromRoute] int assetId)
         {
             AssetTagsDto tags = await assetsService.GetAssetTags(assetId);
@@ -23,7 +48,7 @@ namespace GalleryViewer.Controllers
         [HttpPost("{assetId}/tags")]
         [EndpointName("addAssetTags")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AddTags([FromRoute] int assetId, [FromBody] IEnumerable<string> tags)
         {
 
@@ -35,7 +60,7 @@ namespace GalleryViewer.Controllers
         [HttpDelete("{assetId}/tags/{tag}")]
         [EndpointName("removeAssetTag")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveTag([FromRoute] int assetId, [FromRoute] string tag)
         {
             await assetsService.RemoveTag(assetId, tag.NormalizeTag());

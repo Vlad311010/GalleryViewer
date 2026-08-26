@@ -18,5 +18,17 @@ namespace App.Mappers
                 asset.ImportTime
             );
         }
+
+        public static AssetGroupInfoDto ToAssetGroupInfoDto(this Asset asset, int[]? groupAssets)
+        {
+            ArgumentNullException.ThrowIfNull(asset);
+
+            return new AssetGroupInfoDto(
+                asset.Id,
+                asset.GroupId,
+                asset.GroupPosition,
+                groupAssets
+            );
+        }
     }
 }

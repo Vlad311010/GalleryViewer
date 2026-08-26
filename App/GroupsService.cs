@@ -124,19 +124,24 @@ namespace App
                 .SingleOrDefaultAsync();
         }
 
-        public async Task<AssetGroupDto> GetByIdAsync(int groupId)
+        public async Task<AssetGroupDtoWithAssetPositions> GetByIdAsync(int groupId)
         {
             AssetGroup? group = await context.AssetGroups.FindAsync(groupId);
-
             EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
 
-            return new AssetGroupDto(
-                    group.Id,
-                    group.GalleryId,
-                    group.CoverAssetIdx,
-                    group.Title,
-                    group.PhysicalRelativePath
-                );
+            AssetPosition[] positions = await context.Assets
+                .Where(x => x.GroupId == groupId)
+                .Select(x => new AssetPosition(x.Id, x.GroupPosition!.Value, x.GroupPosition == group.CoverAssetIdx))
+                .ToArrayAsync();
+
+            return new AssetGroupDtoWithAssetPositions(
+                group.Id,
+                group.GalleryId,
+                group.CoverAssetIdx,
+                group.Title,
+                group.PhysicalRelativePath,
+                positions
+            );
         }
     }
 }

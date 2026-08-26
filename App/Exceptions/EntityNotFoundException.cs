@@ -2,22 +2,27 @@
 
 namespace App.Exceptions
 {
-    internal class EntityNotFoundException<TEnity> : AppException
+    public class EntityNotFoundException : AppException
     {
-        public int? EntityId { get; }
-
-        public EntityNotFoundException(string message, int entityId) : base(message)
+        public Type EntityType { get; }
+        public string EntityIdentifier { get; protected set; }
+        protected EntityNotFoundException(Type entityType, string identifier, string message) : base(message)
         {
-            EntityId = entityId;
+            EntityType = entityType;
+            EntityIdentifier = identifier;
+        }
+    }
+
+    internal class EntityNotFoundException<TEnity> : EntityNotFoundException
+    {
+        public EntityNotFoundException(int entityId) : base(typeof(TEnity), entityId.ToString(), $"Entity {typeof(TEnity).Name} with id:{entityId} not found.")
+        {
+
         }
 
-        public EntityNotFoundException(int entityId) : base($"Entity {typeof(TEnity).Name} with id:{entityId} not found.")
+        public EntityNotFoundException(string entityIdentifier) : base(typeof(TEnity), entityIdentifier, $"Entity {typeof(TEnity).Name} with identifier:{entityIdentifier} not found.")
         {
-            EntityId = entityId;
-        }
 
-        public EntityNotFoundException(string entityIdentifier) : base($"Entity {typeof(TEnity).Name} with identifier:{entityIdentifier} not found.")
-        {
         }
 
         public static void ThrowIfNull<T>([NotNull] T? entity, int id)

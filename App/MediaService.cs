@@ -34,15 +34,6 @@ namespace App
             Asset? asset = await context.Assets.FindAsync(assetRequest.AssetId);
             EntityNotFoundException<Asset>.ThrowIfNull(asset, assetRequest.AssetId);
 
-            Gallery? gallery = await context.Galleries.FindAsync(asset.GalleryId);
-            EntityNotFoundException<Gallery>.ThrowIfNull(gallery, asset.GalleryId);
-
-            string assetPath = Path.Combine(gallery.Path, asset.RelativePath);
-            if (string.IsNullOrWhiteSpace(assetPath) || !File.Exists(assetPath))
-            {
-                // TODO: return not found preview image
-            }
-
             return asset.MimeType;
         }
 

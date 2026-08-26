@@ -2,6 +2,8 @@ using App;
 using App.PreviewCreation;
 using App.Settings;
 using Data.Entities;
+using GalleryViewer.ApiSchema;
+using GalleryViewer.Middlewares;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,10 +39,16 @@ builder.Services.AddTransient<PreviewCreatorService>();
 builder.Services.AddTransient<MediaService>();
 builder.Services.AddTransient<TagsServices>();
 builder.Services.AddTransient<GalleriesService>();
+builder.Services.AddTransient<GroupsService>();
 
 
-// Open API
-builder.Services.AddOpenApi();
+// API contract
+// builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SchemaFilter<NonNullablePropertiesRequiredSchemaFilter>();
+});
+
 
 var app = builder.Build();
 
@@ -57,7 +65,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseCors("frontend");
+
+app.UseSwagger();
 
 app.UseStaticFiles();
 

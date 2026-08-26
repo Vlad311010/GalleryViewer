@@ -23,7 +23,7 @@ namespace GalleryViewer.Controllers
         [HttpGet("{name}")]
         [EndpointName("galleryByName")]
         [ProducesResponseType<GalleryResponseModel>(StatusCodes.Status200OK)]
-        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByName([FromRoute] string name)
         {
             GalleryDto? gallery = await galleriesService.GetByNameAsync(name);
