@@ -4,6 +4,7 @@ using App.Enum;
 using App.Exceptions;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Shared.Models;
 
 namespace App.Services
 {
@@ -86,18 +87,20 @@ namespace App.Services
         /// 
         /// </summary>
         /// <param name="groupId"></param>
-        /// <returns>Llast position index</returns>
-        public async Task<int> NormalizePositionAsync(int groupId)
+        /// <returns>Last position index</returns>
+        public async Task<int> NormalizePositionsAsync(int groupId)
         {
-            AssetGroup group = await context.AssetGroups
+            AssetGroup? group = await context.AssetGroups
                 .Include(x => x.Assets)
                 .Where(x => x.Id == groupId)
-                .SingleAsync();
+                .SingleOrDefaultAsync();
+
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+
 
             Asset[] assets = [.. group.Assets];
-            Asset? previewAsset = assets
-                .Where(x => x.GroupPosition!.Value == group.CoverAssetIdx)
-                .SingleOrDefault();
+            Asset previewAsset = assets
+                .Single(x => x.GroupPosition!.Value == group.CoverAssetIdx);
 
             assets = [.. assets.OrderBy(x => x.GroupPosition)];
             for (int i = 0; i < assets.Length; i++)
@@ -105,8 +108,53 @@ namespace App.Services
                 assets[i].GroupPosition = i;
             }
 
-            group.CoverAssetIdx = previewAsset == null ? 0 : previewAsset.GroupPosition!.Value;
+            group.CoverAssetIdx = previewAsset.GroupPosition!.Value;
             return assets.Length;
+        }
+
+        public async Task SetPositionsAsync(int groupId, IEnumerable<AssetPosition> positions)
+        {
+            AssetGroup? group = await context.AssetGroups
+                .Include(x => x.Assets)
+                .Where(x => x.Id == groupId)
+                .SingleOrDefaultAsync();
+
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+
+            Asset[] assets = [.. group.Assets];
+            Asset previewAsset = assets
+                .Single(x => x.GroupPosition!.Value == group.CoverAssetIdx);
+
+            positions = Normalize(positions);
+            Dictionary<int, int> positionsById = positions.ToDictionary(x => x.Id, x => x.Position);
+            foreach (Asset asset in group.Assets)
+            {
+                if (positionsById.TryGetValue(asset.Id, out int position))
+                {
+                    asset.GroupPosition = position;
+                }
+            }
+
+            group.CoverAssetIdx = previewAsset.GroupPosition!.Value;
+            await context.SaveChangesAsync();
+        }
+
+        public async Task SetCover(int groupId, int assetId)
+        {
+            AssetGroup? group = await context.AssetGroups.FindAsync(groupId);
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+
+            Asset? asset = await context.Assets.FindAsync(assetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+
+            if (asset.GroupId != group.Id)
+            {
+                // TODO: throw expt
+            }
+
+            group.CoverAssetIdx = asset.GroupPosition!.Value;
+
+            await context.SaveChangesAsync();
         }
 
         public async Task<int> AssetsCountAsync(int groupId)
@@ -131,7 +179,7 @@ namespace App.Services
 
             AssetPosition[] positions = await context.Assets
                 .Where(x => x.GroupId == groupId)
-                .Select(x => new AssetPosition(x.Id, x.GroupPosition!.Value, x.GroupPosition == group.CoverAssetIdx))
+                .Select(x => new AssetPosition(x.Id, x.GroupPosition!.Value))
                 .ToArrayAsync();
 
             return new AssetGroupDtoWithAssetPositions(
@@ -142,6 +190,13 @@ namespace App.Services
                 group.PhysicalRelativePath,
                 positions
             );
+        }
+
+        private static IEnumerable<AssetPosition> Normalize(IEnumerable<AssetPosition> positions)
+        {
+            return positions
+                .OrderBy(x => x.Position)
+                .Select((x, idx) => x with { Position = idx });
         }
     }
 }

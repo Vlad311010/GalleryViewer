@@ -7,8 +7,7 @@ namespace GalleryViewer.Helpers
         public static string NormalizeTag(this string tag)
         {
             return tag
-                .TrimStart()
-                .TrimEnd()
+                .Trim()
                 .ToLower()
                 .Replace(Constants.TAG_SPACE_CHARACTER, Constants.SPACE_CHARACTER);
         }

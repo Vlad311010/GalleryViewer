@@ -1,5 +1,6 @@
 ﻿using App.Dto.Gallery;
 using App.Services;
+using GalleryViewer.Helpers;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,13 +24,13 @@ namespace GalleryViewer.Controllers
         [HttpGet("{name}")]
         [EndpointName("galleryByName")]
         [ProducesResponseType<GalleryResponseModel>(StatusCodes.Status200OK)]
-        [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByName([FromRoute] string name)
         {
             GalleryDto? gallery = await galleriesService.GetByNameAsync(name);
             if (gallery == null)
             {
-                return NotFound();
+                return ProblemDetailsBuilder.NotFoundProblem($"Gallery {name} not found").AsObjectResult();
             }
 
             return Ok(

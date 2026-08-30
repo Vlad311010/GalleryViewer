@@ -43,10 +43,10 @@ builder.Services.AddTransient<GroupsService>();
 
 
 // API contract
-// builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SchemaFilter<NonNullablePropertiesRequiredSchemaFilter>();
+    options.SupportNonNullableReferenceTypes();
 });
 
 

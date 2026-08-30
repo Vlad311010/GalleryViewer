@@ -18,7 +18,7 @@ namespace App.Services
 
         public async Task<PagedData<DisplayItemDto>> ListAsync(string galleryName, PaginationDto filter, TagFiltersDto tagFilters)
         {
-            ArgumentNullException.ThrowIfNullOrWhiteSpace(galleryName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(galleryName);
             ArgumentNullException.ThrowIfNull(filter);
             ArgumentNullException.ThrowIfNull(tagFilters);
 

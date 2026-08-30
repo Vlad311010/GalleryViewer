@@ -69,17 +69,14 @@ namespace App.Services
 
             EntityNotFoundException<TagCategory>.ThrowIfNull(tagCategory, tagDtoCreate.Category);
 
-
-            // TODO: validation && minor formating
             if (await context.Tags.Where(x => x.Name == tagDtoCreate.Name).AnyAsync())
             {
-                throw new Exception("TODO: custom exception");
+                throw new EntityAlreadyExistsException<Tag>(tagDtoCreate.Name);
             }
-
 
             Tag entity = new Tag
             {
-                Name = tagDtoCreate.Name,
+                Name = NormalizeTag(tagDtoCreate.Name),
                 CategoryId = tagCategory.Id,
                 CanonicalId = tagDtoCreate.CanonicalId,
             };
@@ -128,6 +125,11 @@ namespace App.Services
             })];
 
             return new PagedData<TagDtoInfo>(seletedTags, paginationDto.Skip, paginationDto.Take, totalCount);
+        }
+
+        private static string NormalizeTag(string tag)
+        {
+            return tag.Trim().ToLower().Replace(Constants.TAG_SPACE_CHARACTER, Constants.SPACE_CHARACTER);
         }
     }
 }

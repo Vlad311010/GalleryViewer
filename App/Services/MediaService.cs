@@ -20,7 +20,7 @@ namespace App.Services
             string assetPath = Path.Combine(gallery.Path, asset.RelativePath);
             if (string.IsNullOrWhiteSpace(assetPath) || !File.Exists(assetPath))
             {
-                // TODO: return not found preview image
+                throw new MediaNotFoundException("Media file not found", assetPath);
             }
 
             return new MediaDto(
@@ -52,7 +52,7 @@ namespace App.Services
 
             if (previeFileInfo == null || string.IsNullOrWhiteSpace(previeFileInfo.Path) || !File.Exists(previeFileInfo.Path))
             {
-                // TODO: return not found preview image
+                throw new MediaNotFoundException("Preview file not found", previeFileInfo.Path!);
             }
 
             return new MediaDto(
@@ -80,7 +80,7 @@ namespace App.Services
                         .Select(a => new FileInfo
                         (
                             a.PreviewPath,
-                            PreviewCreatorService.PreviewFileMimeType // a.MimeType
+                            PreviewCreatorService.PreviewFileMimeType
                         ))
                         .Single()
                 )

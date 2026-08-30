@@ -54,7 +54,7 @@ namespace GalleryViewer.Controllers
         [HttpPost]
         [EndpointName("tagCreate")]
         [ProducesResponseType<TagCreateResponseModel>(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Create([FromBody] TagCreateRequestModel request)
         {
             TagDtoCreate createDto = new TagDtoCreate { Name = request.Name, Category = request.Category, CanonicalId = null };

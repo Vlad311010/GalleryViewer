@@ -9,8 +9,9 @@ namespace GalleryViewer.Controllers
     {
         [Produces("application/octet-stream")]
         [HttpGet("{id}")]
-        [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
         [EndpointName("asset")]
+        [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAsset([FromRoute] int id)
         {
             var requestDto = new AssetMediaDtoFetch(id);
@@ -23,6 +24,7 @@ namespace GalleryViewer.Controllers
         [HttpGet("asset/preview/{id}")]
         [EndpointName("assetPreview")]
         [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetPreview([FromRoute] int id)
         {
             var requestDto = new MediaDtoFetch(App.Enum.DisplayItemType.Asset, id);
@@ -35,6 +37,7 @@ namespace GalleryViewer.Controllers
         [HttpGet("group/preview/{id}")]
         [EndpointName("groupPreview")]
         [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetGroupPreview([FromRoute] int id)
         {
             var requestDto = new MediaDtoFetch(App.Enum.DisplayItemType.Group, id);
@@ -47,6 +50,7 @@ namespace GalleryViewer.Controllers
         [HttpGet("asset/{id}/mime-type")]
         [EndpointName("assetMimeType")]
         [ProducesResponseType<string>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetMimeType([FromRoute] int id)
         {
             var requestDto = new AssetMediaDtoFetch(id);

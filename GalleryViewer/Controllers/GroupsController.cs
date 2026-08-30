@@ -1,6 +1,8 @@
 ﻿using App.Dto.Group;
 using App.Services;
+using GalleryViewer.Models.Request;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Models;
 
 namespace GalleryViewer.Controllers
 {
@@ -10,6 +12,7 @@ namespace GalleryViewer.Controllers
         [HttpGet("{id}")]
         [EndpointName("groupDetails")]
         [ProducesResponseType<AssetGroupResponseModel>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetGroup([FromRoute] int id)
         {
             AssetGroupDtoWithAssetPositions group = await groupsService.GetByIdAsync(id);
@@ -19,22 +22,39 @@ namespace GalleryViewer.Controllers
                 group.GalleryId,
                 group.CoverAssetIdx,
                 string.IsNullOrWhiteSpace(group.PhysicalPath),
-                group.Positions.Count(),
-                group.Positions,
-                group.Title,
-                group.PhysicalPath
+                [.. group.Positions],
+                group.Title
             ));
         }
+
+        [HttpPost("{id}/positions")]
+        [EndpointName("groupSetPositons")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> SetAssetPositions([FromRoute] int id, [FromBody] SetAssetPositionsRequestModel request)
+        {
+            await groupsService.SetPositionsAsync(id, request.Positions);
+            return NoContent();
+        }
+
+        [HttpPost("{id}/cover")]
+        [EndpointName("groupSetCover")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> SetGroupCoverAsset([FromRoute] int id, [FromBody] SetGroupCoverRequestModel request)
+        {
+            await groupsService.SetCover(id, request.AssetId);
+            return NoContent();
+        }
+
 
         public record AssetGroupResponseModel(
             int Id,
             int GalleryId,
             int CoverAssetPosition,
-            bool IsEditable,
-            int AssetsCount,
-            IEnumerable<AssetPosition> Positions,
-            string? Title,
-            string? PhysicalPath
+            bool isAssetAddRemoveAllowed,
+            AssetPosition[] Positions,
+            string? Title
         );
     }
 }

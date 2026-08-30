@@ -1,4 +1,6 @@
-﻿namespace App.Dto.Group
+﻿using Shared.Models;
+
+namespace App.Dto.Group
 {
     public record AssetGroupDtoWithAssetPositions(
         int Id,

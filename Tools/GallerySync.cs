@@ -124,10 +124,10 @@ namespace Tools
                     int deleted = await assetsService.DeleteRangeAsync(assetIdsToDelete);
 
                     // normalize group positions
-                    int groupPositionOffset; // TODO: refactor/remove. calculate position on insert relay on actual group object.
+                    int groupPositionOffset;
                     if (deleted > 0)
                     {
-                        groupPositionOffset = 1 + await gropusService.NormalizePositionAsync(group!.Id);
+                        groupPositionOffset = 1 + await gropusService.NormalizePositionsAsync(group!.Id);
                     }
                     else
                     {
@@ -135,10 +135,6 @@ namespace Tools
                     }
 
                     await CreateAssets(gallery, new FilesGroup(filesGroup.Folder, [.. missingAssetPaths]), group, groupPositionOffset);
-                    for (int i = 0; i < missingAssetPaths.Count; i++)
-                    {
-                        // create
-                    }
 
                 }
                 else // fine and up to date 

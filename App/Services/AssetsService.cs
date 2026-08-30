@@ -50,7 +50,6 @@ namespace App.Services
             else
             {
                 return asset?.ToAssetGroupInfoDto(null);
-
             }
         }
 
@@ -62,7 +61,7 @@ namespace App.Services
             string assetFilePath = Path.Combine(targetGallery.Path, dto.RelativePath);
             if (!File.Exists(assetFilePath))
             {
-                throw new FileNotFoundException("Asset file not found", dto.RelativePath);
+                throw new MediaNotFoundException("Asset file not found", assetFilePath);
             }
 
             /// As file creation time is reseted during copy, so modified time may be better source of true of when file landed in file system.
@@ -167,24 +166,30 @@ namespace App.Services
                 .Distinct()
                 .ToArray();
 
-            int[] existingTags = await context.Tags
+            var existingTags = await context.Tags
                 .Where(x => tags.Contains(x.Name))
-                .Select(x => x.Id)
+                .Select(x => new { x.Id, x.Name })
                 .ToArrayAsync();
 
-            if (existingTags.Length != tags.Length)
+            string[] invalidTags = tags
+                .Except(
+                    existingTags
+                    .Select(x => x.Name))
+                .ToArray();
+
+            if (invalidTags.Length > 0)
             {
-                // TODO: thow exception with information which tags are invalid
-                return;
+                throw new UnknownTagsException("One or more tags undefined", invalidTags);
             }
 
+            int[] existingTagIds = [.. existingTags.Select(x => x.Id)];
 
             int[] duplicatedTags = await context.AssetTags
-                .Where(x => x.AssetId == assetId && existingTags.Contains(x.TagId))
+                .Where(x => x.AssetId == assetId && existingTagIds.Contains(x.TagId))
                 .Select(x => x.TagId)
                 .ToArrayAsync();
 
-            int[] tagsToAdd = [.. existingTags.Where(x => !duplicatedTags.Contains(x))];
+            int[] tagsToAdd = [.. existingTagIds.Where(x => !duplicatedTags.Contains(x))];
 
             foreach (var tag in tagsToAdd)
             {

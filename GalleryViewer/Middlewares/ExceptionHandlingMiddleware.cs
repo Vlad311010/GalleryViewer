@@ -1,4 +1,6 @@
 ﻿using App.Exceptions;
+using GalleryViewer.Helpers;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Middlewares
 {
@@ -47,27 +49,38 @@ namespace GalleryViewer.Middlewares
 
         private static async Task HandleAppExceptionAsync(HttpContext context, AppException exception)
         {
-            var (statusCode, title) = exception switch
+            var (statusCode, type, title) = exception switch
             {
                 EntityNotFoundException =>
-                    (StatusCodes.Status404NotFound, "Entity not found"),
+                    (StatusCodes.Status404NotFound, "/problems/entity-not-found", "Not found"),
+
+                EntityAlreadyExistsException =>
+                    (StatusCodes.Status409Conflict, "/problems/entity-already-exists", "Alredy exists"),
+
+                MediaNotFoundException =>
+                    (StatusCodes.Status404NotFound, "/problems/media-not-found", "Media not found"),
+
+                UnknownTagsException =>
+                    (StatusCodes.Status400BadRequest, "/problems/unknown-tag", "One or more tags are not defined"),
 
                 _ =>
-                    (StatusCodes.Status500InternalServerError, "Internal server error")
+                    (StatusCodes.Status500InternalServerError, null, "Internal server error")
             };
 
-            var response = new
+            ProblemDetails problem;
+            switch (exception)
             {
-                title,
-                status = statusCode,
-                detail = statusCode == 500
-                    ? "An unexpected error occurred."
-                    : exception.Message
-            };
+                case UnknownTagsException e:
+                    problem = ProblemDetailsBuilder.InvalidTagsProblem(title, type, statusCode, title, e.InvalidTags);
+                    break;
+
+                default:
+                    problem = ProblemDetailsBuilder.GenericProblem(title, type, statusCode, statusCode == 500 ? "An unexpected error occurred." : title);
+                    break;
+            }
 
             context.Response.StatusCode = statusCode;
-
-            await context.Response.WriteAsJsonAsync(response);
+            await context.Response.WriteAsJsonAsync(problem);
         }
     }
 }
