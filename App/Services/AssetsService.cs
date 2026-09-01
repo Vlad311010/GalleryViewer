@@ -179,7 +179,7 @@ namespace App.Services
 
             if (invalidTags.Length > 0)
             {
-                throw new UnknownTagsException("One or more tags undefined", invalidTags);
+                throw new UnknownTagsException("One or more tags are undefined", invalidTags);
             }
 
             int[] existingTagIds = [.. existingTags.Select(x => x.Id)];

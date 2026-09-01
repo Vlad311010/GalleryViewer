@@ -1,4 +1,5 @@
-﻿using App.Extensions;
+﻿using App.Exceptions;
+using App.Extensions;
 using App.Settings;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
@@ -35,7 +36,7 @@ namespace App.PreviewCreation
                         return await GeneratePreviewAsync(galleryRoot, source, previewData);
                     }
                 default:
-                    throw new Exception("TODO: custom exception type");
+                    throw new NotSupportedMimeTypeException(mimeType);
             }
         }
 

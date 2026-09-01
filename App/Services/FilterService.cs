@@ -28,50 +28,20 @@ namespace App.Services
             var query = context.Assets.AsQueryable()
                 .Where(x => x.GalleryId == gallery.Id);
 
-            string[] tags = tagFilters.Tags
-                .Concat(tagFilters.ExcludeTags)
-                .Distinct()
-                .ToArray();
 
-            Tag[] existingTags = await context.Tags
-                .AsNoTracking()
-                .Where(x => tags.Contains(x.Name))
-                .ToArrayAsync();
-
-            if (existingTags.Length != tags.Length)
+            ResolvedTags tags;
+            try
+            {
+                tags = await ResolveTagFiltersAsync(context, tagFilters);
+            }
+            catch (UnknownTagsException)
             {
                 return new(Array.Empty<DisplayItemDto>(), filter.Skip, filter.Take, 0);
             }
 
-            int[] includeTagIds = existingTags
-                .Where(x => tagFilters.Tags.Contains(x.Name) && !tagFilters.ExcludeTags.Contains(x.Name))
-                .Select(x => x.Id)
-                .ToArray();
-
-            int[] excludeTagIds = existingTags
-                .Where(x => tagFilters.ExcludeTags.Contains(x.Name))
-                .Select(x => x.Id)
-                .ToArray();
-
-
-            if (includeTagIds.Length + excludeTagIds.Length > 0)
-            {
-                query = query.Where(asset =>
-                    includeTagIds
-                        .All(tagId => context.AssetTags.Any(at =>
-                            at.AssetId == asset.Id &&
-                            at.TagId == tagId))
-                    &&
-                    excludeTagIds
-                        .All(tagId => !context.AssetTags.Any(at =>
-                            at.AssetId == asset.Id &&
-                            at.TagId == tagId)));
-            }
-
+            query = ApplyTagFilters(query, tags);
 
             var displayItemKeys = query
-                .OrderByDescending(x => x.CreationTime)
-                .ThenBy(x => x.Id)
                 .GroupBy(a => new
                 {
                     IsGroup = a.GroupId.HasValue,
@@ -79,74 +49,23 @@ namespace App.Services
                 })
                 .Select(g => new
                 {
-                    g.Key.IsGroup,
                     g.Key.Id,
+                    g.Key.IsGroup,
                     CreationTime = g.Min(x => x.CreationTime)
                 });
 
+
             var pageDisplayItemKeys = await displayItemKeys
                 .OrderByDescending(x => x.CreationTime)
+                .ThenBy(x => x.Id)
                 .Skip(filter.Skip)
                 .Take(filter.Take)
+                .Select(x => new DisplayItemKey(x.Id, x.IsGroup, x.CreationTime))
                 .ToListAsync();
 
-            // TODO: move everything below to separate method ItemKeysToDisplayItems(pageDisplayItemKeys);
+            List<DisplayItemDto> displayItems = await ResolveDisplayItemsAsync(pageDisplayItemKeys);
 
-            // TODO:? group unfolding logic
-
-            List<DisplayItemDto> displayItems = new List<DisplayItemDto>(pageDisplayItemKeys.Count);
-            int totalCount = displayItemKeys.Count();
-            foreach (var itemKey in pageDisplayItemKeys)
-            {
-                DisplayItemType itemType = itemKey.IsGroup ? DisplayItemType.Group : DisplayItemType.Asset;
-                int id = itemKey.Id;
-                string? title = null;
-                int? count = null;
-                DateTime creationTime = DateTime.MinValue;
-                DateTime importTime = DateTime.MinValue;
-
-                switch (itemType)
-                {
-                    case DisplayItemType.Asset:
-                        Asset asset = context.Assets.Single(x => x.Id == id);
-                        creationTime = asset.CreationTime;
-                        importTime = asset.ImportTime;
-                        break;
-
-                    case DisplayItemType.Group:
-                        var groupData = await context.AssetGroups // loads group data with preview path from asset
-                            .Where(g => g.Id == id)
-                            .Select(g => new
-                            {
-                                g.Id,
-                                g.Title,
-                                g.CreationTime,
-                                g.ImportTime,
-                                Count = g.Assets.Count(),
-                            })
-                            .SingleAsync();
-
-                        title = groupData.Title;
-                        count = groupData.Count;
-                        creationTime = groupData.CreationTime;
-                        importTime = groupData.ImportTime;
-                        break;
-                }
-
-                displayItems.Add(new()
-                {
-                    Type = itemType,
-                    Id = id,
-                    Title = title,
-                    Count = count,
-                    CreationTime = creationTime,
-                    ImportTime = importTime,
-                });
-            }
-
-            displayItems = displayItems.OrderByDescending(x => x.CreationTime).ToList();
-
-            return new(displayItems, filter.Skip, filter.Take, totalCount);
+            return new(displayItems, filter.Skip, filter.Take, await displayItemKeys.CountAsync());
         }
 
 
@@ -171,6 +90,139 @@ namespace App.Services
                 totalItems
             );
         }
+
+        private static async Task<ResolvedTags> ResolveTagFiltersAsync(AssetsCatalogContext context, TagFiltersDto tagFilters)
+        {
+            string[] tags = tagFilters.Tags
+                .Concat(tagFilters.ExcludeTags)
+                .Distinct()
+                .ToArray();
+
+            Tag[] existingTags = await context.Tags
+                .AsNoTracking()
+                .Where(x => tags.Contains(x.Name))
+                .ToArrayAsync();
+
+            string[] invalidTags = tags
+                .Except(
+                    existingTags
+                    .Select(x => x.Name))
+                .ToArray();
+
+            if (invalidTags.Length > 0)
+            {
+                throw new UnknownTagsException("One or more tags are undefined", invalidTags);
+            }
+
+            int[] includeTagIds = existingTags
+                .Where(x => tagFilters.Tags.Contains(x.Name) && !tagFilters.ExcludeTags.Contains(x.Name))
+                .Select(x => x.Id)
+                .ToArray();
+
+            int[] excludeTagIds = existingTags
+                .Where(x => tagFilters.ExcludeTags.Contains(x.Name))
+                .Select(x => x.Id)
+                .ToArray();
+
+            return new(includeTagIds, excludeTagIds);
+        }
+
+        private IQueryable<Asset> ApplyTagFilters(IQueryable<Asset> query, ResolvedTags tags)
+        {
+            if (tags.IncludeTagIds.Length + tags.ExcludeTagIds.Length > 0)
+            {
+                query = query.Where(asset =>
+                    tags.IncludeTagIds
+                        .All(tagId => context.AssetTags.Any(at =>
+                            at.AssetId == asset.Id &&
+                            at.TagId == tagId))
+                    &&
+                    tags.ExcludeTagIds
+                        .All(tagId => !context.AssetTags.Any(at =>
+                            at.AssetId == asset.Id &&
+                            at.TagId == tagId)));
+            }
+
+            return query;
+        }
+
+        private async Task<List<DisplayItemDto>> ResolveDisplayItemsAsync(IReadOnlyCollection<DisplayItemKey> keys)
+        {
+            int[] assetIds = keys
+                .Where(x => !x.IsGroup)
+                .Select(x => x.Id)
+                .ToArray();
+
+            int[] groupIds = keys
+                .Where(x => x.IsGroup)
+                .Select(x => x.Id)
+                .ToArray();
+
+            var assets = await context.Assets
+                .Where(x => assetIds.Contains(x.Id))
+                .Select(x => new
+                {
+                    x.Id,
+                    x.CreationTime,
+                    x.ImportTime,
+                })
+                .ToDictionaryAsync(x => x.Id);
+
+            var groups = await context.AssetGroups
+                .Where(x => groupIds.Contains(x.Id))
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Title,
+                    x.CreationTime,
+                    x.ImportTime,
+                    Count = x.Assets.Count(),
+                })
+                .ToDictionaryAsync(x => x.Id);
+
+
+            List<DisplayItemDto> displayItems = new List<DisplayItemDto>(keys.Count);
+            foreach (var itemKey in keys)
+            {
+                if (itemKey.IsGroup)
+                {
+                    var group = groups[itemKey.Id];
+
+                    displayItems.Add(new DisplayItemDto
+                    {
+                        Type = DisplayItemType.Group,
+                        Id = group.Id,
+                        Title = group.Title,
+                        Count = group.Count,
+                        CreationTime = group.CreationTime,
+                        ImportTime = group.ImportTime,
+                    });
+                }
+                else
+                {
+                    var asset = assets[itemKey.Id];
+
+                    displayItems.Add(new DisplayItemDto
+                    {
+                        Type = DisplayItemType.Asset,
+                        Id = asset.Id,
+                        CreationTime = asset.CreationTime,
+                        ImportTime = asset.ImportTime,
+                    });
+                }
+            }
+
+            // TODO:? group unfolding logic
+
+            return [.. displayItems.OrderByDescending(x => x.CreationTime)];
+        }
+
+        private record DisplayItemKey(int Id, bool IsGroup, DateTime CreationTime);
+
+        private record ResolvedTags(
+            int[] IncludeTagIds,
+            int[] ExcludeTagIds
+        );
 
         private static DisplayItemDto ToDisplayItemDto(Asset asset)
         {
