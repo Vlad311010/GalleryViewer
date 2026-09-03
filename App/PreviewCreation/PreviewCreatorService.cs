@@ -22,7 +22,7 @@ namespace App.PreviewCreation
         }
 
 
-        public async Task<string> CreatePreviewAsync(string galleryRoot, string source)
+        public async Task<string> CreatePreviewAsync(string galleryRoot, string source) // TODO: logging
         {
             string mimeType = source.ToMimeType();
             string mediaType = mimeType.Split('/')[0];
@@ -75,7 +75,7 @@ namespace App.PreviewCreation
             return destination;
         }
 
-        public string ConstructPreviewPath(string galleryRoot, string sourcePath)
+        private string ConstructPreviewPath(string galleryRoot, string sourcePath)
         {
             string sourceRelativePath = Path.GetRelativePath(galleryRoot, sourcePath);
             string? subDirectory = Path.GetDirectoryName(sourceRelativePath);
@@ -83,7 +83,7 @@ namespace App.PreviewCreation
             string directoryPrefix = string.IsNullOrWhiteSpace(subDirectory) ? string.Empty : $"_{subDirectory}_";
             string previewFileName = $"{settings.Prefix}{directoryPrefix}{Path.GetFileNameWithoutExtension(sourcePath)}{PreviewFileExtension}";
 
-            return Path.Combine(settings.PreviewFolder, previewFileName); // Maybe exist issue if file located in root folder TODO: doble check/fix
+            return Path.Combine(settings.PreviewFolder, previewFileName);
         }
     }
 }

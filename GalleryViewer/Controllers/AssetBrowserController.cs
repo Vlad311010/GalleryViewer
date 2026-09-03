@@ -1,6 +1,7 @@
 ﻿using App.Dto.Filter;
 using App.Services;
 using GalleryViewer.Helpers;
+using GalleryViewer.Mappers;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,7 @@ namespace GalleryViewer.Controllers
             var result = await filterService.ListAsync(gallery, filter, tagFilters);
 
             return Ok(
-                result.Cast(ToDisplayItemResponseModel)
+                result.Cast(x => x.ToDisplayItemResponseModel())
             );
         }
 
@@ -43,22 +44,8 @@ namespace GalleryViewer.Controllers
             var result = await filterService.ListGroupAssetsAsync(groupId, filter);
 
             return Ok(
-                result.Cast(ToDisplayItemResponseModel)
+                result.Cast(x => x.ToDisplayItemResponseModel())
             );
-        }
-
-
-        private DisplayItemResponseModel ToDisplayItemResponseModel(DisplayItemDto dto) //TODO: to helper
-        {
-            return new DisplayItemResponseModel
-            {
-                Type = dto.Type,
-                Id = dto.Id,
-                CreationTime = dto.CreationTime,
-                ImportTime = dto.ImportTime,
-                Title = dto.Title,
-                Count = dto.Count,
-            };
         }
     }
 }

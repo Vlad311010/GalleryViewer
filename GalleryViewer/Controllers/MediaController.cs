@@ -8,7 +8,7 @@ namespace GalleryViewer.Controllers
     public class MediaController(MediaService mediaService) : BaseController
     {
         [Produces("application/octet-stream")]
-        [HttpGet("{id}")]
+        [HttpGet("asset/{id}")]
         [EndpointName("asset")]
         [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

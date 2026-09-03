@@ -4,12 +4,15 @@ using App.Exceptions;
 using App.Mappers;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Shared;
+using Shared.Enums;
+using Shared.Extensions;
 using Shared.Models;
 
 namespace App.Services
 {
-    public class TagsServices(AssetsCatalogContext context)
+    public class TagsServices(AssetsCatalogContext context, ILogger<TagsServices> logger)
     {
         public async Task<TagDto> Get(int id)
         {
@@ -84,6 +87,11 @@ namespace App.Services
             context.Tags.Add(entity);
 
             await context.SaveChangesAsync();
+
+            logger.Info("Created tag {name} id:{id}, category:{categoryId}", ApplicationArea.Service,
+                entity.Name,
+                entity.Id,
+                entity.CategoryId);
 
             return new TagDtoInfo
             {

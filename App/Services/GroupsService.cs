@@ -4,11 +4,14 @@ using App.Enum;
 using App.Exceptions;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shared.Enums;
+using Shared.Extensions;
 using Shared.Models;
 
 namespace App.Services
 {
-    public class GroupsService(AssetsCatalogContext context)
+    public class GroupsService(AssetsCatalogContext context, ILogger<GroupsService> logger)
     {
         /// <summary>
         /// </summary>
@@ -33,6 +36,8 @@ namespace App.Services
 
             entity = (await context.AssetGroups.AddAsync(entity)).Entity;
             await context.SaveChangesAsync();
+
+            logger.Info("Created group {id}", ApplicationArea.Service, entity.Id);
 
             return new AssetGroupDto(entity.Id, entity.GalleryId, entity.CoverAssetIdx, entity.Title, entity.PhysicalRelativePath);
         }
@@ -108,6 +113,8 @@ namespace App.Services
                 assets[i].GroupPosition = i;
             }
 
+            logger.Info("Group {id} asset positions normalized", ApplicationArea.Service, group.Id);
+
             group.CoverAssetIdx = previewAsset.GroupPosition!.Value;
             return assets.Length;
         }
@@ -136,7 +143,14 @@ namespace App.Services
             }
 
             group.CoverAssetIdx = previewAsset.GroupPosition!.Value;
+
             await context.SaveChangesAsync();
+
+            logger.LogInformation(
+                "Asset positions updated for group {GroupId}. {AssetCount} assets reordered.",
+                groupId,
+                positionsById.Count);
+
         }
 
         public async Task SetCover(int groupId, int assetId)
@@ -149,12 +163,17 @@ namespace App.Services
 
             if (asset.GroupId != group.Id)
             {
-                // TODO: throw expt
+                throw new EntityAssociationException<Asset, AssetGroup>(assetId, groupId, $"Asset '{assetId}' is not associated with group '{groupId}'.");
             }
 
             group.CoverAssetIdx = asset.GroupPosition!.Value;
 
             await context.SaveChangesAsync();
+
+            logger.LogInformation(
+                "Cover asset updated for group {GroupId}. Cover asset is {CoverAssetId}",
+                groupId,
+                asset.Id);
         }
 
         public async Task<int> AssetsCountAsync(int groupId)

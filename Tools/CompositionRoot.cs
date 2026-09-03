@@ -2,12 +2,17 @@
 using App.Services;
 using App.Settings;
 using Data.Entities;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
+using Tools.Sync;
 
 namespace Tools
 {
-    internal class CompositionRoot
+    internal class CompositionRoot : IDisposable
     {
+        private readonly ILoggerFactory loggerFactory;
+
         public PreviewCreatorService PreviewCreator { get; }
         public GalleriesService Galleries { get; }
         public AssetsService Images { get; }
@@ -16,10 +21,15 @@ namespace Tools
 
         public CompositionRoot(AssetsCatalogContext context, PreviewSettings previewSettings)
         {
+            loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddSerilog(Log.Logger);
+            });
+
             PreviewCreator = new PreviewCreatorService(Options.Create(previewSettings));
-            Galleries = new GalleriesService(context);
-            Images = new AssetsService(context);
-            Groups = new GroupsService(context);
+            Galleries = new GalleriesService(context, loggerFactory.CreateLogger<GalleriesService>());
+            Images = new AssetsService(context, loggerFactory.CreateLogger<AssetsService>());
+            Groups = new GroupsService(context, loggerFactory.CreateLogger<GroupsService>());
             Persistence = new PersistenceService(context);
         }
 
@@ -30,9 +40,14 @@ namespace Tools
                 Images,
                 PreviewCreator,
                 Groups,
-                Persistence);
+                Persistence,
+                loggerFactory.CreateLogger<GallerySync>()
+            );
         }
 
-
+        public void Dispose()
+        {
+            loggerFactory.Dispose();
+        }
     }
 }

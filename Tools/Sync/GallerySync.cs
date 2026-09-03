@@ -3,28 +3,56 @@ using App.Dto.Gallery;
 using App.Dto.Group;
 using App.PreviewCreation;
 using App.Services;
+using Microsoft.Extensions.Logging;
+using Shared.Enums;
+using Shared.Extensions;
 using Tools.Models;
 
-namespace Tools
+namespace Tools.Sync
 {
     internal class GallerySync(
         GalleriesService galleriesService,
         AssetsService assetsService,
         PreviewCreatorService previewCreatorService,
         GroupsService gropusService,
-        PersistenceService persistence)
+        PersistenceService persistence,
+        ILogger<GallerySync> logger)
     {
+        private readonly SyncState state = new();
+        public event EventHandler<SyncStateData>? OnProgressUpdated;
+
+        private void ProgressUpdate(SyncEvent syncEvent)
+        {
+            state.Apply(syncEvent);
+            OnProgressUpdated?.Invoke(this, state.Data);
+        }
 
         public async Task SyncronizeGalleryAsync(GallerySyncData syncData)
         {
+            logger.Info(
+                "Starting gallery synchronization for {GalleryCount} configured galleries", ApplicationArea.Tools,
+                syncData.Galeries.Count()
+            );
+
+
             foreach (var galleryData in syncData.Galeries)
             {
+                ProgressUpdate(new SyncEvent(
+                    SyncEventType.GalleryProcessingStarted,
+                    galleryData.Name,
+                    null,
+                    null)
+                );
 
                 IEnumerable<FilesGroup> files = GetFiles(galleryData);
 
                 if (files.Count() == 0)
                 {
-                    Loggining.Log($"Skipping {galleryData.Name} as {galleryData.Path} does not contain any file");
+                    logger.Warning(
+                        "Skipping gallery {GalleryName}: no supported files found at {GalleryPath}", ApplicationArea.Tools,
+                        galleryData.Name,
+                        galleryData.Path
+                    );
                     continue;
                 }
 
@@ -35,20 +63,49 @@ namespace Tools
                     requiresInitialThumbnail = true;
                     GalleryDtoCreate galleryCreate = new GalleryDtoCreate(galleryData.Name, galleryData.Path);
                     gallery = await galleriesService.CreateAndSaveAsync(galleryCreate);
-                    Loggining.Log($"Created gallery {gallery.Name} with path: {gallery.Path}");
+                    logger.Info(
+                        "Synchronizing new gallery {GalleryName}", ApplicationArea.Tools,
+                        galleryData.Name
+                    );
+
+                    ProgressUpdate(new SyncEvent(
+                        SyncEventType.GalleryCreated,
+                        gallery.Name,
+                        null,
+                        null)
+                    );
                 }
                 else
                 {
                     if (!IsMatchesWithConfig(gallery, galleryData))
                     {
-                        Loggining.Warning($"Skipping {gallery.Name}.\n" +
-                            $"Existing gallery mistmaches with provided in config." +
-                            $"\n{gallery.Name}=={galleryData.Name}\n{gallery.Path}=={galleryData.Path}");
+                        logger.Warning(
+                            "Skipping gallery synchronization because configuration does not match existing gallery. " +
+                            "GalleryId={GalleryId}, ExistingName={ExistingName}, ConfiguredName={ConfiguredName}, " +
+                            "ExistingPath={ExistingPath}, ConfiguredPath={ConfiguredPath}", ApplicationArea.Tools,
+                            gallery.Id,
+                            gallery.Name,
+                            galleryData.Name,
+                            gallery.Path,
+                            galleryData.Path
+                        );
+
                         continue;
                     }
-                    Loggining.Log($"Gallery {gallery.Name} with path: {gallery.Path} alredy exists.\nSynchronize...");
+
+                    logger.Info(
+                        "Synchronizing existing gallery {GalleryName} ({GalleryId})", ApplicationArea.Tools,
+                        gallery.Name,
+                        gallery.Id
+                    );
                 }
 
+                ProgressUpdate(new SyncEvent(
+                    SyncEventType.GallerySyncStarted,
+                    gallery.Name,
+                    null,
+                    null)
+                );
 
                 await AddAssetsAsync(gallery, files);
 
@@ -65,7 +122,12 @@ namespace Tools
                     var thumbnailAsset = await assetsService.GetByPathAsync(gallery.Id, thumbnailFile);
                     if (thumbnailAsset == null)
                     {
-                        Loggining.Error($"Asset with path: {thumbnailFile} does not exist in gallery {gallery.Name}(Id: {gallery.Id})");
+                        logger.Warning(
+                            "Configured thumbnail asset was not found. GalleryId={GalleryId}, GalleryName={GalleryName}, AssetPath={AssetPath}", ApplicationArea.Tools,
+                            gallery.Id,
+                            gallery.Name,
+                            thumbnailFile
+                        );
                     }
                     else if (thumbnailAsset.Id != gallery.CoverAssetId)
                     {
@@ -74,6 +136,8 @@ namespace Tools
                     }
                 }
             }
+
+            logger.Info("Synchronization completed", ApplicationArea.Tools);
         }
 
         private async Task AddAssetsAsync(GalleryDto gallery, IEnumerable<FilesGroup> filesGroups)
@@ -99,26 +163,38 @@ namespace Tools
                 AssetGroupDto? group = await gropusService.GetPhysicalGroup(gallery.Id, filesGroup.Folder);
                 if (group == null)
                 {
-                    Loggining.Log($"New group {filesGroup.Folder}");
                     await CreateGroupAsync(gallery, filesGroup);
                 }
                 else if (!gropusService.IsSynchronized(group, filesGroup.Files, out List<AssetSynchronizationDto> outOfSyncAsset))// out of sync
                 {
+                    ProgressUpdate(new SyncEvent(
+                        SyncEventType.GroupSyncStarted,
+                        gallery.Name,
+                        $"{group.Id} {group.Title} {group.PhysicalPath}",
+                        null)
+                    );
+
                     List<int> assetIdsToDelete = new List<int>();
                     List<string> missingAssetPaths = new List<string>();
+
                     foreach (var asset in outOfSyncAsset)
                     {
                         if (asset.Type == App.Enum.SyncMismatchType.OnlyDb) // files were removed from file system
                         {
-                            Loggining.Log($"Asset to Remove Id:{asset.id!.Value}  group:{group!.Id}");
                             assetIdsToDelete.Add(asset.id!.Value);
                         }
                         else if (asset.Type == App.Enum.SyncMismatchType.OnlyFileSystem) // new files added inside folder in file system
                         {
-                            Loggining.Log($"Asset to Add group:{group!.Id}");
                             missingAssetPaths.Add(asset.RelativePath);
                         }
                     }
+
+                    logger.Info(
+                        "Group {GroupId} synchronization detected changes: {AssetsToRemove} assets to remove, {AssetsToAdd} assets to add", ApplicationArea.Tools,
+                        group.Id,
+                        assetIdsToDelete.Count,
+                        missingAssetPaths.Count
+                    );
 
                     // delete
                     int deleted = await assetsService.DeleteRangeAsync(assetIdsToDelete);
@@ -139,7 +215,10 @@ namespace Tools
                 }
                 else // fine and up to date 
                 {
-                    Loggining.Log($"Group is insync id:{group.Id}");
+                    logger.Debug(
+                        "Group {GroupId} is already synchronized", ApplicationArea.Tools,
+                        group.Id
+                    );
                 }
             }
         }
@@ -152,7 +231,15 @@ namespace Tools
             AssetGroupDtoCreate createDto = new(gallery.Id, filesGroup.Folder, filesGroup.Folder, creationTime);
             AssetGroupDto group = await gropusService.CreateGroupAndSaveAsync(createDto);
 
+            ProgressUpdate(new SyncEvent(
+                SyncEventType.GroupCreated,
+                gallery.Name,
+                $"{group.Id} {group.Title} {group.PhysicalPath}",
+                null)
+            );
+
             await CreateAssets(gallery, filesGroup, group);
+
         }
 
         private async Task CreateAssets(GalleryDto gallery, FilesGroup filesGroup, AssetGroupDto? group, int positionOffset = 0)
@@ -162,13 +249,30 @@ namespace Tools
                 string relativePath = filesGroup.Files[i];
                 if (await assetsService.Exists(gallery.Id, relativePath))
                 {
-                    Loggining.Log($"\tSkip asset {relativePath}");
+                    logger.Debug(
+                        "Skipping existing asset {AssetPath} in gallery {GalleryId}", ApplicationArea.Tools,
+                        relativePath,
+                        gallery.Id
+                    );
+
+                    ProgressUpdate(new SyncEvent(
+                        SyncEventType.AssetSkipped,
+                        gallery.Name,
+                        filesGroup.Folder,
+                        relativePath)
+                    );
+
                     continue; // TODO:? maybe update some data
                 }
 
-                Loggining.Log($"\t Create asset {relativePath}");
                 string assetFilePath = Path.Combine(gallery.Path, relativePath);
                 string previewPath = await previewCreatorService.CreatePreviewAsync(gallery.Path, assetFilePath);
+                ProgressUpdate(new SyncEvent(
+                    SyncEventType.AssetCreated,
+                    gallery.Name,
+                    filesGroup.Folder,
+                    relativePath)
+                );
 
                 AssetDtoCreate assetDtoCreate = new(gallery.Id, relativePath, previewPath, group?.Id, group == null ? null : i + positionOffset);
                 await assetsService.CreateAssetAsync(assetDtoCreate);
@@ -225,6 +329,7 @@ namespace Tools
         {
             return string.Equals(gallery.Name, galleryConfigData.Name, StringComparison.OrdinalIgnoreCase) && gallery.Path == galleryConfigData.Path;
         }
+
 
         private record FilesGroup(string Folder, string[] Files);
     }

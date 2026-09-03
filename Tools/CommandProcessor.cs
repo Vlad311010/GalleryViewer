@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using System.Text.Json;
 using Tools.Models;
+using Tools.Sync;
 
 namespace Tools
 {
@@ -49,24 +50,29 @@ namespace Tools
 
         private static async Task<int> RunSync(SyncOptions options, CompositionRoot compositionRoot)
         {
-            Loggining.Log("Executin: Sync");
-
+            ConsoleDisplay.Display("Executing: Sync");
 
             if (!File.Exists(options.ConfigPath))
             {
-                Loggining.Error("File not found");
+                ConsoleDisplay.DisplayError("File not found");
                 return 1;
             }
             FileStream fileStream = new FileStream(options.ConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             GallerySyncData? data = JsonDocument.Parse(fileStream).Deserialize<GallerySyncData>();
             if (data == null)
             {
-                Loggining.Error("Failed to parse config file");
+                ConsoleDisplay.DisplayError("Failed to parse config file");
                 return 1;
             }
 
 
             GallerySync gallerySync = compositionRoot.CreateGallerySync();
+
+            gallerySync.OnProgressUpdated += (_, state) =>
+            {
+                ConsoleDisplay.DisplaySyncState(state);
+            };
+
             await gallerySync.SyncronizeGalleryAsync(data);
 
             return 0;
@@ -74,7 +80,7 @@ namespace Tools
 
         private static async Task<int> RunPreview(PreviewOptions options, CompositionRoot compositionRoot)
         {
-            Loggining.Log(nameof(RunPreview));
+            ConsoleDisplay.Display(nameof(RunPreview));
             return 0;
         }
     }

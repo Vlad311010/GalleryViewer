@@ -1,6 +1,7 @@
 ﻿using App.Dto.Gallery;
 using App.Services;
 using GalleryViewer.Helpers;
+using GalleryViewer.Mappers;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +18,7 @@ namespace GalleryViewer.Controllers
             IEnumerable<GalleryDto> galleries = await galleriesService.ListAsync();
 
             return Ok(
-                galleries.Select(ToGalleryResponseModel)
+                galleries.Select(x => x.ToGalleryResponseModel())
             );
         }
 
@@ -34,13 +35,8 @@ namespace GalleryViewer.Controllers
             }
 
             return Ok(
-                ToGalleryResponseModel(gallery)
+                gallery.ToGalleryResponseModel()
             );
-        }
-
-        private GalleryResponseModel ToGalleryResponseModel(GalleryDto dto)
-        {
-            return new(dto.Id, dto.Name, dto.CoverAssetId);
         }
     }
 }

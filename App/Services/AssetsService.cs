@@ -6,11 +6,14 @@ using App.Mappers;
 using App.Utils;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shared.Enums;
+using Shared.Extensions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace App.Services
 {
-    public class AssetsService(AssetsCatalogContext context)
+    public class AssetsService(AssetsCatalogContext context, ILogger<AssetsService> logger)
     {
         public bool TryGetByHash(string md5Hash, [NotNullWhen(true)] out AssetDto assetDto)
         {
@@ -87,6 +90,8 @@ namespace App.Services
             };
 
             entity = (await context.Assets.AddAsync(entity)).Entity;
+
+            logger.Info($"Asset {entity.Id} created", ApplicationArea.Service);
             return entity.ToAssetDto();
         }
 
@@ -95,6 +100,11 @@ namespace App.Services
             int deleted = await context.Assets
                 .Where(x => x.Id == id)
                 .ExecuteDeleteAsync();
+
+            if (deleted > 0)
+            {
+                logger.Info("Asset {id} deleted", ApplicationArea.Service, id);
+            }
 
             return deleted > 0;
         }
@@ -110,6 +120,8 @@ namespace App.Services
             int deleted = await context.Assets
                 .Where(x => ids.Contains(x.Id))
                 .ExecuteDeleteAsync();
+
+            logger.Info("Asset {ids} deleted", ApplicationArea.Service, string.Join(',', ids));
 
             return deleted;
         }
@@ -196,6 +208,11 @@ namespace App.Services
                 context.AssetTags.Add(new AssetTag { AssetId = assetId, TagId = tag });
             }
 
+            logger.Info(
+                "Added {TagCount} tags to asset {AssetId}", ApplicationArea.Service,
+                tagsToAdd.Count(),
+                assetId);
+
             await context.SaveChangesAsync();
         }
 
@@ -212,8 +229,12 @@ namespace App.Services
 
             context.AssetTags.Remove(new AssetTag { AssetId = assetId, TagId = tagEntity.Id });
 
+            logger.Info(
+                "Removed {TagId} tag from asset{AssetId}", ApplicationArea.Service,
+                tagEntity.Id,
+                assetId);
+
             await context.SaveChangesAsync();
         }
-
     }
 }

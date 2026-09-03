@@ -2,10 +2,13 @@
 using App.Exceptions;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shared.Enums;
+using Shared.Extensions;
 
 namespace App.Services
 {
-    public class GalleriesService(AssetsCatalogContext context)
+    public class GalleriesService(AssetsCatalogContext context, ILogger<GalleriesService> logger)
     {
         public async Task<GalleryDto> CreateAndSaveAsync(GalleryDtoCreate dto)
         {
@@ -17,6 +20,12 @@ namespace App.Services
 
             Gallery createdEntity = (await context.Galleries.AddAsync(entity)).Entity;
             await context.SaveChangesAsync();
+
+            logger.Info(
+                "Created gallery id:{id} name:{name} path:{path}", ApplicationArea.Service,
+                entity.Id,
+                entity.Name,
+                entity.Path);
 
             return new GalleryDto(createdEntity.Id, createdEntity.Name, createdEntity.Path, createdEntity.CoverSourceId);
         }

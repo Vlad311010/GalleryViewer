@@ -1,8 +1,8 @@
 ﻿using App.Dto.Group;
 using App.Services;
 using GalleryViewer.Models.Request;
+using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Models;
 
 namespace GalleryViewer.Controllers
 {
@@ -46,15 +46,5 @@ namespace GalleryViewer.Controllers
             await groupsService.SetCover(id, request.AssetId);
             return NoContent();
         }
-
-
-        public record AssetGroupResponseModel(
-            int Id,
-            int GalleryId,
-            int CoverAssetPosition,
-            bool isAssetAddRemoveAllowed,
-            AssetPosition[] Positions,
-            string? Title
-        );
     }
 }

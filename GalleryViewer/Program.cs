@@ -5,8 +5,18 @@ using Data.Entities;
 using GalleryViewer.ApiSchema;
 using GalleryViewer.Middlewares;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Shared.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services);
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -65,6 +75,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseSerilogRequestLogging(options =>
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set(Shared.Extensions.LoggerExtensions.AreaPropertyName, ApplicationArea.Http);
+    }
+);
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
