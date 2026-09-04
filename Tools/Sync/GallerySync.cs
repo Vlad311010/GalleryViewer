@@ -18,35 +18,31 @@ namespace Tools.Sync
         PersistenceService persistence,
         ILogger<GallerySync> logger)
     {
-        private readonly SyncState state = new();
-        public event EventHandler<SyncStateData>? OnProgressUpdated;
+        private SyncState state = new();
+        public event EventHandler<SyncState>? OnProgressUpdated;
 
         private void ProgressUpdate(SyncEvent syncEvent)
         {
             state.Apply(syncEvent);
-            OnProgressUpdated?.Invoke(this, state.Data);
+            OnProgressUpdated?.Invoke(this, state);
         }
 
         public async Task SyncronizeGalleryAsync(GallerySyncData syncData)
         {
+            state = new();
+            state.SetGalleries(syncData.Galeries.Select(x => x.Name));
+
             logger.Info(
                 "Starting gallery synchronization for {GalleryCount} configured galleries", ApplicationArea.Tools,
                 syncData.Galeries.Count()
             );
 
-
             foreach (var galleryData in syncData.Galeries)
             {
-                ProgressUpdate(new SyncEvent(
-                    SyncEventType.GalleryProcessingStarted,
-                    galleryData.Name,
-                    null,
-                    null)
-                );
+                (IEnumerable<FilesGroup> files, int filesCount) = GetFiles(galleryData);
 
-                IEnumerable<FilesGroup> files = GetFiles(galleryData);
 
-                if (files.Count() == 0)
+                if (filesCount == 0)
                 {
                     logger.Warning(
                         "Skipping gallery {GalleryName}: no supported files found at {GalleryPath}", ApplicationArea.Tools,
@@ -55,6 +51,14 @@ namespace Tools.Sync
                     );
                     continue;
                 }
+
+                state.TrackGallery(galleryData.Name, filesCount);
+                ProgressUpdate(new SyncEvent(
+                    SyncEventType.GalleryProcessingStarted,
+                    galleryData.Name,
+                    null,
+                    null)
+                );
 
                 bool requiresInitialThumbnail = false;
                 GalleryDto? gallery = await galleriesService.GetByNameAsync(galleryData.Name);
@@ -135,6 +139,20 @@ namespace Tools.Sync
                         await persistence.SaveChangesAsync();
                     }
                 }
+
+                logger.Info(
+                    "Gallery synchronization completed for {GalleryName}. " +
+                    "Files={TotalFilesToProcess}, " +
+                    "CreatedAssets={CreatedAssets}, " +
+                    "SkippedAssets={SkippedAssets}, " +
+                    "DeletedAssets={DeletedAssets}, " +
+                    "CreatedGroups={CreatedGroups}", ApplicationArea.Tools,
+                    state[gallery.Name].GalleryName,
+                    state[gallery.Name].TotalFilesToProcess,
+                    state[gallery.Name].CreatedAssets,
+                    state[gallery.Name].SkippedAssets,
+                    state[gallery.Name].DeletedAssets,
+                    state[gallery.Name].CreatedGroups);
             }
 
             logger.Info("Synchronization completed", ApplicationArea.Tools);
@@ -170,7 +188,7 @@ namespace Tools.Sync
                     ProgressUpdate(new SyncEvent(
                         SyncEventType.GroupSyncStarted,
                         gallery.Name,
-                        $"{group.Id} {group.Title} {group.PhysicalPath}",
+                        group,
                         null)
                     );
 
@@ -215,6 +233,14 @@ namespace Tools.Sync
                 }
                 else // fine and up to date 
                 {
+                    ProgressUpdate(new SyncEvent(
+                        SyncEventType.GroupSyncSkipped,
+                        gallery.Name,
+                        group,
+                        null,
+                        filesGroup.Files.Length)
+                    );
+
                     logger.Debug(
                         "Group {GroupId} is already synchronized", ApplicationArea.Tools,
                         group.Id
@@ -234,7 +260,7 @@ namespace Tools.Sync
             ProgressUpdate(new SyncEvent(
                 SyncEventType.GroupCreated,
                 gallery.Name,
-                $"{group.Id} {group.Title} {group.PhysicalPath}",
+                group,
                 null)
             );
 
@@ -258,7 +284,7 @@ namespace Tools.Sync
                     ProgressUpdate(new SyncEvent(
                         SyncEventType.AssetSkipped,
                         gallery.Name,
-                        filesGroup.Folder,
+                        group,
                         relativePath)
                     );
 
@@ -270,7 +296,7 @@ namespace Tools.Sync
                 ProgressUpdate(new SyncEvent(
                     SyncEventType.AssetCreated,
                     gallery.Name,
-                    filesGroup.Folder,
+                    group,
                     relativePath)
                 );
 
@@ -279,22 +305,26 @@ namespace Tools.Sync
             }
         }
 
-        private static IEnumerable<FilesGroup> GetFiles(GaleryData data)
+        private static (IEnumerable<FilesGroup>, int) GetFiles(GaleryData data)
         {
             string root = @$"{data.Path}";
             if (!Directory.Exists(root))
             {
-                return [];
+                return ([], 0);
             }
 
             var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avi", ".mp4", ".webm", ".gif" };
 
             SearchOption searchOption = SearchOption.AllDirectories;
 
-            IEnumerable<FilesGroup> files = Directory
+            IEnumerable<string> files = Directory
                 .EnumerateFiles(root, "*.*", searchOption)
                 .Where(f => extensions.Contains(
-                    Path.GetExtension(f).ToLowerInvariant()))
+                    Path.GetExtension(f).ToLowerInvariant()));
+
+            int filesCount = files.Count();
+
+            IEnumerable<FilesGroup> groupedFiles = files
                 .OrderBy(File.GetLastWriteTimeUtc)
                 .ThenBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .GroupBy(f =>
@@ -312,17 +342,7 @@ namespace Tools.Sync
                 );
 
 
-            /*foreach (var group in files)
-            {
-                Loggining.Log($"[{group.Folder}]");
-
-                foreach (var file in group.Files)
-                {
-                    Loggining.Log($"\t{file}");
-                }
-            }*/
-
-            return files;
+            return (groupedFiles, filesCount);
         }
 
         private static bool IsMatchesWithConfig(GalleryDto gallery, GaleryData galleryConfigData)

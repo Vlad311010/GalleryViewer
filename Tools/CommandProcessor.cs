@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using System.Text.Json;
+using Tools.Display;
 using Tools.Models;
 using Tools.Sync;
 
@@ -66,15 +67,18 @@ namespace Tools
             }
 
 
+            var displayTask = Task.Run(() => LiveSyncStatusDisplay.Start());
+
             GallerySync gallerySync = compositionRoot.CreateGallerySync();
 
             gallerySync.OnProgressUpdated += (_, state) =>
             {
-                ConsoleDisplay.DisplaySyncState(state);
+                LiveSyncStatusDisplay.DisplaySyncState(state);
             };
 
             await gallerySync.SyncronizeGalleryAsync(data);
 
+            LiveSyncStatusDisplay.Stop();
             return 0;
         }
 
