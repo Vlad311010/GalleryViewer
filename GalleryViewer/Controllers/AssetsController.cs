@@ -1,6 +1,6 @@
 ﻿using App.Dto.Asset;
 using App.Dto.Tag;
-using App.Services;
+using App.Interfaces.Services;
 using GalleryViewer.Helpers;
 using GalleryViewer.Models;
 using GalleryViewer.Models.Response;
@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class AssetsController(AssetsService assetsService) : BaseController
+    public class AssetsController(IAssetService assetsService) : BaseController
     {
         [HttpGet("{assetId}")]
         [EndpointName("groupAssetInfo")]

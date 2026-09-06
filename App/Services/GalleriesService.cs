@@ -1,5 +1,6 @@
 ﻿using App.Dto.Gallery;
 using App.Exceptions;
+using App.Interfaces.Services;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ using Shared.Extensions;
 
 namespace App.Services
 {
-    public class GalleriesService(AssetsCatalogContext context, ILogger<GalleriesService> logger)
+    public class GalleriesService(AssetsCatalogContext context, ILogger<GalleriesService> logger) : IGalleriesService
     {
         public async Task<GalleryDto> CreateAndSaveAsync(GalleryDtoCreate dto)
         {

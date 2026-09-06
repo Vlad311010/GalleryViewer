@@ -6,9 +6,11 @@ namespace App.Extensions
     {
         private static readonly FileExtensionContentTypeProvider Provider = new();
 
-        public static string ToMimeType(this string filePath)
+        public static string ToMimeType(this string subpath)
         {
-            return Provider.TryGetContentType(filePath, out var mimeType)
+            ArgumentException.ThrowIfNullOrWhiteSpace(subpath);
+
+            return Provider.TryGetContentType(subpath, out var mimeType)
                 ? mimeType
                 : "application/octet-stream";
         }

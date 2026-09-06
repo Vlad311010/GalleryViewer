@@ -2,6 +2,7 @@
 using App.Dto.Tag;
 using App.Exceptions;
 using App.Extensions;
+using App.Interfaces.Services;
 using App.Mappers;
 using App.Utils;
 using Data.Entities;
@@ -13,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace App.Services
 {
-    public class AssetsService(AssetsCatalogContext context, ILogger<AssetsService> logger)
+    public class AssetsService(AssetsCatalogContext context, IMediaAccessorService mediaAccessorService, ILogger<AssetsService> logger) : IAssetService
     {
         public bool TryGetByHash(string md5Hash, [NotNullWhen(true)] out AssetDto assetDto)
         {
@@ -62,26 +63,24 @@ namespace App.Services
             EntityNotFoundException<Gallery>.ThrowIfNull(targetGallery, dto.GalleryId);
 
             string assetFilePath = Path.Combine(targetGallery.Path, dto.RelativePath);
-            if (!File.Exists(assetFilePath))
+            if (!mediaAccessorService.Exists(assetFilePath))
             {
                 throw new MediaNotFoundException("Asset file not found", assetFilePath);
             }
 
             /// As file creation time is reseted during copy, so modified time may be better source of true of when file landed in file system.
-            /// Just for safety measure smallest of two values is taken as creationTime.
-            DateTime creationTime = File.GetCreationTimeUtc(assetFilePath);
-            DateTime modifiedTime = File.GetLastWriteTimeUtc(assetFilePath);
-            creationTime = creationTime > modifiedTime ? modifiedTime : creationTime;
+            DateTime modifiedTime = mediaAccessorService.GetLastModifiedTime(assetFilePath);
             DateTime currentTime = DateTime.UtcNow;
-            string hash = await Md5Hash.ComputeAsync(assetFilePath);
 
+            using Stream assetData = mediaAccessorService.GetMediaData(assetFilePath);
+            string hash = await Md5Hash.ComputeAsync(assetData);
             Asset entity = new()
             {
                 GalleryId = dto.GalleryId,
                 RelativePath = dto.RelativePath,
                 MimeType = dto.RelativePath.ToMimeType(),
                 Hash = hash,
-                CreationTime = creationTime,
+                CreationTime = modifiedTime,
                 ImportTime = currentTime,
                 PreviewPath = dto.PreviewPath,
 

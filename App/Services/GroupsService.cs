@@ -2,6 +2,7 @@
 using App.Dto.Group;
 using App.Enum;
 using App.Exceptions;
+using App.Interfaces.Services;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ using Shared.Models;
 
 namespace App.Services
 {
-    public class GroupsService(AssetsCatalogContext context, ILogger<GroupsService> logger)
+    public class GroupsService(AssetsCatalogContext context, ILogger<GroupsService> logger) : IGroupService
     {
         /// <summary>
         /// </summary>
@@ -19,7 +20,7 @@ namespace App.Services
         /// <param name="assets"></param>
         /// <param name="creationTimeOverride">If present will be a source of creation time. Used to override creation time of groups created of physical directoies</param>
         /// <returns></returns>
-        public async Task<AssetGroupDto> CreateGroupAndSaveAsync(AssetGroupDtoCreate dto)
+        public async Task<AssetGroupDto> CreateGroup(AssetGroupDtoCreate dto)
         {
             DateTime importTime = DateTime.UtcNow;
             DateTime creationTime = dto.CreationTimeOverride.HasValue ? dto.CreationTimeOverride.Value : importTime;

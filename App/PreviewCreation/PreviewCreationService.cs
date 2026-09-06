@@ -1,43 +1,66 @@
 ﻿using App.Exceptions;
 using App.Extensions;
+using App.Interfaces.Services;
 using App.Settings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Shared.Enums;
+using Shared.Extensions;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
 namespace App.PreviewCreation
 {
-    public class PreviewCreatorService
+    public class PreviewCreationService : IPreviewCreationService
     {
-        public const string PreviewFileExtension = ".webp";
-        public const string PreviewFileMimeType = "image/webp";
-        PreviewSettings settings;
+        private const string PreviewFileExtension = ".webp";
+        private readonly PreviewSettings settings;
+        private readonly ILogger<PreviewCreationService> logger;
 
-        public PreviewCreatorService(IOptions<PreviewSettings> settings)
+        public PreviewCreationService(IOptions<PreviewSettings> settings, ILogger<PreviewCreationService> logger)
         {
             ArgumentNullException.ThrowIfNull(settings.Value);
+            ArgumentNullException.ThrowIfNull(logger);
 
             this.settings = settings.Value;
+            this.logger = logger;
         }
 
 
-        public async Task<string> CreatePreviewAsync(string galleryRoot, string source) // TODO: logging
+        public async Task<string> CreatePreviewAsync(string galleryRoot, string assetDataRef)
         {
-            string mimeType = source.ToMimeType();
+            string mimeType = assetDataRef.ToMimeType();
             string mediaType = mimeType.Split('/')[0];
+            logger.Debug(
+                "Creating {MediaType} preview for {AssetSource}", ApplicationArea.Service,
+                mediaType,
+                assetDataRef
+            );
+
+            string preview;
             switch (mediaType)
             {
                 case "image":
-                    return await GeneratePreviewAsync(galleryRoot, source);
+                    preview = await GeneratePreviewAsync(galleryRoot, assetDataRef);
+                    break;
                 case "video":
-                    using (Stream previewData = VideoFrameExtractor.GetFrame(source, TimeSpan.FromSeconds(1)))
+                    using (Stream previewData = VideoFrameExtractor.GetFrame(assetDataRef, TimeSpan.FromSeconds(1)))
                     {
-                        return await GeneratePreviewAsync(galleryRoot, source, previewData);
+                        preview = await GeneratePreviewAsync(galleryRoot, assetDataRef, previewData);
                     }
+                    break;
                 default:
                     throw new NotSupportedMimeTypeException(mimeType);
             }
+
+            logger.Debug(
+                "Preview created for {AssetSource} at {PreviewPath}", ApplicationArea.Service,
+                assetDataRef,
+                preview
+            );
+
+            return preview;
         }
 
         private async Task<string> GeneratePreviewAsync(string galleryRoot, string assetSource)

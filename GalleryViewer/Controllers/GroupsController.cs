@@ -1,5 +1,5 @@
 ﻿using App.Dto.Group;
-using App.Services;
+using App.Interfaces.Services;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class GroupsController(GroupsService groupsService) : BaseController
+    public class GroupsController(IGroupService groupsService) : BaseController
     {
         [HttpGet("{id}")]
         [EndpointName("groupDetails")]

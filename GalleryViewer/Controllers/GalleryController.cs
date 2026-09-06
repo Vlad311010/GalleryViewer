@@ -1,5 +1,5 @@
 ﻿using App.Dto.Gallery;
-using App.Services;
+using App.Interfaces.Services;
 using GalleryViewer.Helpers;
 using GalleryViewer.Mappers;
 using GalleryViewer.Models.Response;
@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class GalleryController(GalleriesService galleriesService) : BaseController
+    public class GalleryController(IGalleriesService galleriesService) : BaseController
     {
         [HttpGet]
         [EndpointName("galleries")]

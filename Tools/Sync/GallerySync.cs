@@ -13,7 +13,7 @@ namespace Tools.Sync
     internal class GallerySync(
         GalleriesService galleriesService,
         AssetsService assetsService,
-        PreviewCreatorService previewCreatorService,
+        PreviewCreationService previewCreatorService,
         GroupsService gropusService,
         PersistenceService persistence,
         ILogger<GallerySync> logger)
@@ -255,7 +255,7 @@ namespace Tools.Sync
                 Path.Combine(gallery.Path, filesGroup.Folder));
 
             AssetGroupDtoCreate createDto = new(gallery.Id, filesGroup.Folder, filesGroup.Folder, creationTime);
-            AssetGroupDto group = await gropusService.CreateGroupAndSaveAsync(createDto);
+            AssetGroupDto group = await gropusService.CreateGroup(createDto);
 
             ProgressUpdate(new SyncEvent(
                 SyncEventType.GroupCreated,

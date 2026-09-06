@@ -1,11 +1,11 @@
 ﻿using App.Dto.Media;
-using App.Services;
+using App.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Controllers
 {
 
-    public class MediaController(MediaService mediaService) : BaseController
+    public class MediaController(IMediaService mediaService) : BaseController
     {
         [Produces("application/octet-stream")]
         [HttpGet("asset/{id}")]

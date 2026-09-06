@@ -1,4 +1,4 @@
-using App.PreviewCreation;
+using App.Interfaces.Services;
 using App.Services;
 using App.Settings;
 using Data.Entities;
@@ -43,13 +43,13 @@ builder.Services.AddDbContext<AssetsCatalogContext>(options =>
         builder.Configuration.GetConnectionString("GalleryViewer")));
 
 // Services
-builder.Services.AddTransient<AssetsService>();
-builder.Services.AddTransient<FilterService>();
-builder.Services.AddTransient<PreviewCreatorService>();
-builder.Services.AddTransient<MediaService>();
-builder.Services.AddTransient<TagsServices>();
-builder.Services.AddTransient<GalleriesService>();
-builder.Services.AddTransient<GroupsService>();
+builder.Services.AddTransient<IAssetService, AssetsService>();
+builder.Services.AddTransient<IAssetsFilterService, FilterService>();
+builder.Services.AddTransient<IMediaService, MediaService>();
+builder.Services.AddTransient<ITagsService, TagsServices>();
+builder.Services.AddTransient<IGalleriesService, GalleriesService>();
+builder.Services.AddTransient<IGroupService, GroupsService>();
+builder.Services.AddTransient<IMediaAccessorService, FileSystemMediaAccessorService>();
 
 
 // API contract

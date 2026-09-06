@@ -1,21 +1,15 @@
 ﻿using App.Dto.Filter;
 using App.Enum;
 using App.Exceptions;
+using App.Interfaces.Services;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Shared.Models;
 
 namespace App.Services
 {
-    public class FilterService
+    public class FilterService(AssetsCatalogContext context) : IAssetsFilterService
     {
-        private readonly AssetsCatalogContext context;
-
-        public FilterService(AssetsCatalogContext context)
-        {
-            this.context = context;
-        }
-
         public async Task<PagedData<DisplayItemDto>> ListAsync(string galleryName, PaginationDto filter, TagFiltersDto tagFilters)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(galleryName);

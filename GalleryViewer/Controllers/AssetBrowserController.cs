@@ -1,5 +1,5 @@
 ﻿using App.Dto.Filter;
-using App.Services;
+using App.Interfaces.Services;
 using GalleryViewer.Helpers;
 using GalleryViewer.Mappers;
 using GalleryViewer.Models.Request;
@@ -10,7 +10,7 @@ using Shared.Models;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class AssetBrowserController(FilterService filterService) : BaseController
+    public class AssetBrowserController(IAssetsFilterService filterService) : BaseController
     {
         [HttpGet("{gallery}")]
         [ProducesResponseType<PagedData<DisplayItemResponseModel>>(StatusCodes.Status200OK)]

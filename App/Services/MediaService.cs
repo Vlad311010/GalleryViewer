@@ -1,13 +1,14 @@
 ﻿using App.Dto.Media;
 using App.Enum;
 using App.Exceptions;
-using App.PreviewCreation;
+using App.Extensions;
+using App.Interfaces.Services;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace App.Services
 {
-    public class MediaService(AssetsCatalogContext context)
+    public class MediaService(AssetsCatalogContext context, IMediaAccessorService mediaAccessorService) : IMediaService
     {
         public async Task<MediaDto> GetAssetMediaAsync(AssetMediaDtoFetch assetRequest)
         {
@@ -18,13 +19,13 @@ namespace App.Services
             EntityNotFoundException<Gallery>.ThrowIfNull(gallery, asset.GalleryId);
 
             string assetPath = Path.Combine(gallery.Path, asset.RelativePath);
-            if (string.IsNullOrWhiteSpace(assetPath) || !File.Exists(assetPath))
+            if (!mediaAccessorService.Exists(assetPath))
             {
                 throw new MediaNotFoundException("Media file not found", assetPath);
             }
 
             return new MediaDto(
-                new FileStream(assetPath, FileMode.Open, FileAccess.Read, FileShare.Read),
+                mediaAccessorService.GetMediaData(assetPath),
                 asset.MimeType
             );
         }
@@ -39,61 +40,52 @@ namespace App.Services
 
         public async Task<MediaDto> GetAssetPreviewAsync(MediaDtoFetch mediaRequest)
         {
-            FileInfo previeFileInfo = null;
+            string? previeFilePath = null;
             switch (mediaRequest.ItemType)
             {
                 case DisplayItemType.Asset:
-                    previeFileInfo = await GetAssetPreviewPathAsync(mediaRequest.ItemId);
+                    previeFilePath = await GetAssetPreviewPathAsync(mediaRequest.ItemId);
                     break;
                 case DisplayItemType.Group:
-                    previeFileInfo = await GetGroupPreviewPathAsync(mediaRequest.ItemId);
+                    previeFilePath = await GetGroupPreviewPathAsync(mediaRequest.ItemId);
                     break;
             }
 
-            if (previeFileInfo == null || string.IsNullOrWhiteSpace(previeFileInfo.Path) || !File.Exists(previeFileInfo.Path))
+            if (previeFilePath == null || !mediaAccessorService.Exists(previeFilePath))
             {
-                throw new MediaNotFoundException("Preview file not found", previeFileInfo.Path!);
+                throw new MediaNotFoundException($"Preview file for {mediaRequest.ItemType} {mediaRequest.ItemId} not found.", previeFilePath);
             }
 
             return new MediaDto(
-                new FileStream(previeFileInfo.Path, FileMode.Open, FileAccess.Read, FileShare.Read),
-                previeFileInfo.MimeType
+                new FileStream(previeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read),
+                previeFilePath.ToMimeType()
             );
         }
 
 
-        private async Task<FileInfo> GetAssetPreviewPathAsync(int id)
+        private async Task<string?> GetAssetPreviewPathAsync(int id)
         {
             Asset? asset = await context.Assets.FindAsync(id);
             EntityNotFoundException<Asset>.ThrowIfNull(asset, id);
 
-            return new FileInfo(asset.PreviewPath, PreviewCreatorService.PreviewFileMimeType);
+            return asset.PreviewPath;
         }
 
-        private async Task<FileInfo> GetGroupPreviewPathAsync(int id)
+        private async Task<string?> GetGroupPreviewPathAsync(int id)
         {
-            var fileInfo = await context.AssetGroups
+            string? previewPath = await context.AssetGroups
                 .Where(g => g.Id == id)
                 .Select(g =>
                     g.Assets
                         .Where(a => a.GroupPosition == g.CoverAssetIdx)
-                        .Select(a => new FileInfo
-                        (
-                            a.PreviewPath,
-                            PreviewCreatorService.PreviewFileMimeType
-                        ))
+                        .Select(a =>
+                            a.PreviewPath
+                        )
                         .Single()
                 )
                 .SingleOrDefaultAsync();
 
-            if (fileInfo == null)
-            {
-                throw new EntityNotFoundException<AssetGroup>(id);
-            }
-
-            return fileInfo;
+            return previewPath;
         }
-
-        private record FileInfo(string? Path, string MimeType);
     }
 }

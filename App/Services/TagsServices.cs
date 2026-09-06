@@ -1,6 +1,7 @@
 ﻿using App.Dto.Filter;
 using App.Dto.Tag;
 using App.Exceptions;
+using App.Interfaces.Services;
 using App.Mappers;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ using Shared.Models;
 
 namespace App.Services
 {
-    public class TagsServices(AssetsCatalogContext context, ILogger<TagsServices> logger)
+    public class TagsServices(AssetsCatalogContext context, ILogger<TagsServices> logger) : ITagsService
     {
         public async Task<TagDto> Get(int id)
         {
@@ -63,7 +64,7 @@ namespace App.Services
             ).ToArray();
         }
 
-        public async Task<TagDtoInfo> CreateAndSaveAsync(TagDtoCreate tagDtoCreate)
+        public async Task<TagDtoInfo> Create(TagDtoCreate tagDtoCreate)
         {
             TagCategory? tagCategory = await context.TagCategories
                 .AsNoTracking()

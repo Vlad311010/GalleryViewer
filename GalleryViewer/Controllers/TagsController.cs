@@ -1,6 +1,6 @@
 ﻿using App.Dto.Filter;
 using App.Dto.Tag;
-using App.Services;
+using App.Interfaces.Services;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ using Shared.Models;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class TagsController(TagsServices tagsServices) : BaseController
+    public class TagsController(ITagsService tagsServices) : BaseController
     {
         [HttpGet("search")]
         [EndpointName("searchTags")]
@@ -58,7 +58,7 @@ namespace GalleryViewer.Controllers
         public async Task<IActionResult> Create([FromBody] TagCreateRequestModel request)
         {
             TagDtoCreate createDto = new TagDtoCreate { Name = request.Name, Category = request.Category, CanonicalId = null };
-            TagDtoInfo tag = await tagsServices.CreateAndSaveAsync(createDto);
+            TagDtoInfo tag = await tagsServices.Create(createDto);
 
 
             return Created((string)null!, new TagCreateResponseModel(tag.Id, tag.Name, tag.Category));

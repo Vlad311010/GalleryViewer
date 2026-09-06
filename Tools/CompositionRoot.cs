@@ -13,10 +13,11 @@ namespace Tools
     {
         private readonly ILoggerFactory loggerFactory;
 
-        public PreviewCreatorService PreviewCreator { get; }
+        public PreviewCreationService PreviewCreator { get; }
         public GalleriesService Galleries { get; }
         public AssetsService Images { get; }
         public GroupsService Groups { get; }
+        public FileSystemMediaAccessorService MediaAccessorService { get; }
         public PersistenceService Persistence { get; }
 
         public CompositionRoot(AssetsCatalogContext context, PreviewSettings previewSettings)
@@ -26,9 +27,10 @@ namespace Tools
                 builder.AddSerilog(Log.Logger);
             });
 
-            PreviewCreator = new PreviewCreatorService(Options.Create(previewSettings));
+            MediaAccessorService = new FileSystemMediaAccessorService();
+            PreviewCreator = new PreviewCreationService(Options.Create(previewSettings), loggerFactory.CreateLogger<PreviewCreationService>());
             Galleries = new GalleriesService(context, loggerFactory.CreateLogger<GalleriesService>());
-            Images = new AssetsService(context, loggerFactory.CreateLogger<AssetsService>());
+            Images = new AssetsService(context, MediaAccessorService, loggerFactory.CreateLogger<AssetsService>());
             Groups = new GroupsService(context, loggerFactory.CreateLogger<GroupsService>());
             Persistence = new PersistenceService(context);
         }
