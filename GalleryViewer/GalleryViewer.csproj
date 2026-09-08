@@ -22,6 +22,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="dotnet-tools.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="dotnet-tools.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
       <PrivateAssets>all</PrivateAssets>
@@ -51,6 +61,14 @@
 	<Content Update="appsettings.Development.json">
 		<CopyToPublishDirectory>Never</CopyToPublishDirectory>
 	</Content>
+
+	<Content Update="appsettings.json">
+		<TargetPath>appsettings.App.json</TargetPath>   
+	</Content>
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+	<DefineConstants>$(DefineConstants);PUBLISHED_APP</DefineConstants>
+  </PropertyGroup>
 
 </Project>

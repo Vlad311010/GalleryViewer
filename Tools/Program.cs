@@ -2,18 +2,24 @@
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Tools;
 
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-var configPath = string.Equals(environment, Environments.Development, StringComparison.OrdinalIgnoreCase)
-    ? @".\appsettings.Development.json"
-    : @".\appsettings.json";
+
+#if PUBLISHED_APP
+var configPath = Path.Combine(
+    AppContext.BaseDirectory,
+    "appsettings.Tools.json");
+#else
+var configPath = Path.Combine(
+    AppContext.BaseDirectory,
+    "appsettings.Development.json");
+#endif
 
 var configuration = new ConfigurationBuilder()
-    .AddJsonFile(configPath)
+    .AddJsonFile(configPath, optional: false, reloadOnChange: false)
     .Build();
 
 Log.Logger = new LoggerConfiguration()

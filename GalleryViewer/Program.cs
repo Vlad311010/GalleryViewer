@@ -22,6 +22,13 @@ builder.Host.UseSerilog((context, services, configuration) =>
 builder.Services.AddControllers();
 
 // Settings
+#if PUBLISHED_APP
+builder.Configuration.AddJsonFile(
+    "appsettings.App.json",
+    optional: false,
+    reloadOnChange: false);
+#endif
+
 builder.Services.Configure<PreviewSettings>(
     builder.Configuration.GetSection(PreviewSettings.SectionName));
 
@@ -90,8 +97,6 @@ app.UseSwagger();
 
 app.UseStaticFiles();
 
-app.UseHttpsRedirection();
-
 app.UseRouting();
 
 app.UseAuthorization();
@@ -101,5 +106,13 @@ app.MapStaticAssets();
 app.MapControllers();
 
 app.MapFallbackToFile("index.html");
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    foreach (var address in app.Urls)
+    {
+        Log.Information("GalleryViewer is running at {Address}", address);
+    }
+});
 
 app.Run();
