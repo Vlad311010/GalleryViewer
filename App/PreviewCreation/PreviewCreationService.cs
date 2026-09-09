@@ -28,7 +28,7 @@ namespace App.PreviewCreation
         }
 
 
-        public async Task<string> CreatePreviewAsync(string galleryRoot, string assetDataRef)
+        public async Task<string> StageCreatePreviewAsync(string galleryRoot, string assetDataRef)
         {
             string mimeType = assetDataRef.ToMimeType();
             string mediaType = mimeType.Split('/')[0];

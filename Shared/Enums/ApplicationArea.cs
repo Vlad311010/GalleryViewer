@@ -2,6 +2,7 @@
 {
     public enum ApplicationArea
     {
+        Unknown,
         Controller,
         Service,
         Database,

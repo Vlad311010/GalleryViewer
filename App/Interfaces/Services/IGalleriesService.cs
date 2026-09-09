@@ -4,9 +4,9 @@ namespace App.Interfaces.Services
 {
     public interface IGalleriesService
     {
-        Task<GalleryDto> CreateAndSaveAsync(GalleryDtoCreate dto);
+        Task<GalleryDto> Create(GalleryDtoCreate dto);
         Task<GalleryDto?> GetByNameAsync(string galleryName);
         Task<IEnumerable<GalleryDto>> ListAsync();
-        Task SetPreviewAssetAsync(int galleryId, int coverSourceId);
+        Task StageUpdatePreviewAssetAsync(int galleryId, int coverSourceId);
     }
 }

@@ -94,7 +94,7 @@ namespace App.Services
         /// </summary>
         /// <param name="groupId"></param>
         /// <returns>Last position index</returns>
-        public async Task<int> NormalizePositionsAsync(int groupId)
+        public async Task<int> StageNormalizePositionsAsync(int groupId)
         {
             AssetGroup? group = await context.AssetGroups
                 .Include(x => x.Assets)

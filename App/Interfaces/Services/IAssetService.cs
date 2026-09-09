@@ -7,9 +7,9 @@ namespace App.Interfaces.Services
     public interface IAssetService
     {
         Task AddTags(int assetId, string[] tags);
-        Task<AssetDto> CreateAssetAsync(AssetDtoCreate dto);
+        Task<AssetDto> StageCreateAssetAsync(AssetDtoCreate dto);
         Task<bool> DeleteAsync(int id);
-        Task<int> DeleteRangeAsync(IEnumerable<int> ids);
+        Task<int> StageDeleteRangeAsync(IEnumerable<int> ids);
         Task<bool> Exists(int galleryId, string relativePath);
         Task<AssetGroupInfoDto?> GetAssetGroupInfo(int assetId);
         Task<AssetTagsDto> GetAssetTags(int assetId);

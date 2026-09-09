@@ -11,7 +11,7 @@ namespace App.Services
 {
     public class GalleriesService(AssetsCatalogContext context, ILogger<GalleriesService> logger) : IGalleriesService
     {
-        public async Task<GalleryDto> CreateAndSaveAsync(GalleryDtoCreate dto)
+        public async Task<GalleryDto> Create(GalleryDtoCreate dto)
         {
             Gallery entity = new Gallery
             {
@@ -45,14 +45,13 @@ namespace App.Services
             return galleries.Select(x => new GalleryDto(x.Id, x.Name, x.Path, x.CoverSourceId));
         }
 
-        public async Task SetPreviewAssetAsync(int galleryId, int coverSourceId)
+        public async Task StageUpdatePreviewAssetAsync(int galleryId, int coverSourceId)
         {
             Gallery? entity = await context.Galleries.FindAsync(galleryId);
             EntityNotFoundException<Gallery>.ThrowIfNull(entity, galleryId);
 
 
             entity.CoverSourceId = coverSourceId;
-            await context.SaveChangesAsync();
         }
     }
 }

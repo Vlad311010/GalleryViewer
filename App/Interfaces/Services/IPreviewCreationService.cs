@@ -2,6 +2,6 @@
 {
     public interface IPreviewCreationService
     {
-        Task<string> CreatePreviewAsync(string galleryRoot, string assetDataRef);
+        Task<string> StageCreatePreviewAsync(string galleryRoot, string assetDataRef);
     }
 }

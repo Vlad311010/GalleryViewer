@@ -41,10 +41,10 @@ namespace Shared.Extensions
         public static void Debug(
             this ILogger logger,
             string message,
-            ApplicationArea area,
+            ApplicationArea? area = null,
             params object[] args)
         {
-            using (LogContext.PushProperty(AreaPropertyName, area))
+            using (LogContext.PushProperty(AreaPropertyName, area ?? ApplicationArea.Unknown))
                 logger.LogDebug(message, args);
         }
     }

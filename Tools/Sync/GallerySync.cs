@@ -27,7 +27,7 @@ namespace Tools.Sync
             OnProgressUpdated?.Invoke(this, state);
         }
 
-        public async Task SyncronizeGalleryAsync(GallerySyncData syncData)
+        public async Task Syncronize(GallerySyncData syncData)
         {
             state = new();
             state.SetGalleries(syncData.Galeries.Select(x => x.Name));
@@ -40,7 +40,6 @@ namespace Tools.Sync
             foreach (var galleryData in syncData.Galeries)
             {
                 (IEnumerable<FilesGroup> files, int filesCount) = GetFiles(galleryData);
-
 
                 if (filesCount == 0)
                 {
@@ -66,7 +65,8 @@ namespace Tools.Sync
                 {
                     requiresInitialThumbnail = true;
                     GalleryDtoCreate galleryCreate = new GalleryDtoCreate(galleryData.Name, galleryData.Path);
-                    gallery = await galleriesService.CreateAndSaveAsync(galleryCreate);
+                    gallery = await galleriesService.Create(galleryCreate);
+
                     logger.Info(
                         "Synchronizing new gallery {GalleryName}", ApplicationArea.Tools,
                         galleryData.Name
@@ -111,10 +111,12 @@ namespace Tools.Sync
                     null)
                 );
 
-                await AddAssetsAsync(gallery, files);
+                await SyncGalleryAsync(gallery, files);
 
                 await persistence.SaveChangesAsync();
 
+
+                // gallery thumbnail
                 string? thumbnailFile = galleryData.ThumbnailFile;
                 if (requiresInitialThumbnail)
                 {
@@ -135,8 +137,7 @@ namespace Tools.Sync
                     }
                     else if (thumbnailAsset.Id != gallery.CoverAssetId)
                     {
-                        await galleriesService.SetPreviewAssetAsync(gallery.Id, thumbnailAsset.Id);
-                        await persistence.SaveChangesAsync();
+                        await galleriesService.StageUpdatePreviewAssetAsync(gallery.Id, thumbnailAsset.Id);
                     }
                 }
 
@@ -158,7 +159,7 @@ namespace Tools.Sync
             logger.Info("Synchronization completed", ApplicationArea.Tools);
         }
 
-        private async Task AddAssetsAsync(GalleryDto gallery, IEnumerable<FilesGroup> filesGroups)
+        private async Task SyncGalleryAsync(GalleryDto gallery, IEnumerable<FilesGroup> filesGroups)
         {
             foreach (var filesGroup in filesGroups)
             {
@@ -174,7 +175,7 @@ namespace Tools.Sync
 
                 if (string.IsNullOrEmpty(filesGroup.Folder)) // no group --- root folder
                 {
-                    await CreateAssets(gallery, filesGroup, null);
+                    await CreateAssets(gallery, filesGroup.Files, null);
                     continue;
                 }
 
@@ -185,51 +186,7 @@ namespace Tools.Sync
                 }
                 else if (!gropusService.IsSynchronized(group, filesGroup.Files, out List<AssetSynchronizationDto> outOfSyncAsset))// out of sync
                 {
-                    ProgressUpdate(new SyncEvent(
-                        SyncEventType.GroupSyncStarted,
-                        gallery.Name,
-                        group,
-                        null)
-                    );
-
-                    List<int> assetIdsToDelete = new List<int>();
-                    List<string> missingAssetPaths = new List<string>();
-
-                    foreach (var asset in outOfSyncAsset)
-                    {
-                        if (asset.Type == App.Enum.SyncMismatchType.OnlyDb) // files were removed from file system
-                        {
-                            assetIdsToDelete.Add(asset.id!.Value);
-                        }
-                        else if (asset.Type == App.Enum.SyncMismatchType.OnlyFileSystem) // new files added inside folder in file system
-                        {
-                            missingAssetPaths.Add(asset.RelativePath);
-                        }
-                    }
-
-                    logger.Info(
-                        "Group {GroupId} synchronization detected changes: {AssetsToRemove} assets to remove, {AssetsToAdd} assets to add", ApplicationArea.Tools,
-                        group.Id,
-                        assetIdsToDelete.Count,
-                        missingAssetPaths.Count
-                    );
-
-                    // delete
-                    int deleted = await assetsService.DeleteRangeAsync(assetIdsToDelete);
-
-                    // normalize group positions
-                    int groupPositionOffset;
-                    if (deleted > 0)
-                    {
-                        groupPositionOffset = 1 + await gropusService.NormalizePositionsAsync(group!.Id);
-                    }
-                    else
-                    {
-                        groupPositionOffset = await gropusService.AssetsCountAsync(group!.Id);
-                    }
-
-                    await CreateAssets(gallery, new FilesGroup(filesGroup.Folder, [.. missingAssetPaths]), group, groupPositionOffset);
-
+                    await SyncGroupAsync(gallery, group, outOfSyncAsset);
                 }
                 else // fine and up to date 
                 {
@@ -264,15 +221,62 @@ namespace Tools.Sync
                 null)
             );
 
-            await CreateAssets(gallery, filesGroup, group);
-
+            await CreateAssets(gallery, filesGroup.Files, group);
         }
 
-        private async Task CreateAssets(GalleryDto gallery, FilesGroup filesGroup, AssetGroupDto? group, int positionOffset = 0)
+        private async Task SyncGroupAsync(GalleryDto gallery, AssetGroupDto group, List<AssetSynchronizationDto> outOfSyncAsset)
         {
-            for (int i = 0; i < filesGroup.Files.Length; i++)
+            ProgressUpdate(new SyncEvent(
+                        SyncEventType.GroupSyncStarted,
+                        gallery.Name,
+                        group,
+                        null)
+                    );
+
+            List<int> assetIdsToDelete = new List<int>();
+            List<string> missingAssetPaths = new List<string>();
+
+            foreach (var asset in outOfSyncAsset)
             {
-                string relativePath = filesGroup.Files[i];
+                if (asset.Type == App.Enum.SyncMismatchType.OnlyDb) // files were removed from file system
+                {
+                    assetIdsToDelete.Add(asset.id!.Value);
+                }
+                else if (asset.Type == App.Enum.SyncMismatchType.OnlyFileSystem) // new files added inside folder in file system
+                {
+                    missingAssetPaths.Add(asset.RelativePath);
+                }
+            }
+
+            logger.Info(
+                "Group {GroupId} synchronization detected changes: {AssetsToRemove} assets to remove, {AssetsToAdd} assets to add", ApplicationArea.Tools,
+                group.Id,
+                assetIdsToDelete.Count,
+                missingAssetPaths.Count
+            );
+
+            // delete
+            int deleted = await assetsService.StageDeleteRangeAsync(assetIdsToDelete);
+
+            // normalize group positions
+            int groupPositionOffset;
+            if (deleted > 0)
+            {
+                groupPositionOffset = 1 + await gropusService.StageNormalizePositionsAsync(group!.Id);
+            }
+            else
+            {
+                groupPositionOffset = await gropusService.AssetsCountAsync(group!.Id);
+            }
+
+            await CreateAssets(gallery, [.. missingAssetPaths], group, groupPositionOffset);
+        }
+
+        private async Task CreateAssets(GalleryDto gallery, string[] files, AssetGroupDto? group, int positionOffset = 0)
+        {
+            for (int i = 0; i < files.Length; i++)
+            {
+                string relativePath = files[i];
                 if (await assetsService.Exists(gallery.Id, relativePath))
                 {
                     logger.Debug(
@@ -288,11 +292,11 @@ namespace Tools.Sync
                         relativePath)
                     );
 
-                    continue; // TODO:? maybe update some data
+                    continue;
                 }
 
                 string assetFilePath = Path.Combine(gallery.Path, relativePath);
-                string previewPath = await previewCreatorService.CreatePreviewAsync(gallery.Path, assetFilePath);
+                string previewPath = await previewCreatorService.StageCreatePreviewAsync(gallery.Path, assetFilePath);
                 ProgressUpdate(new SyncEvent(
                     SyncEventType.AssetCreated,
                     gallery.Name,
@@ -301,9 +305,10 @@ namespace Tools.Sync
                 );
 
                 AssetDtoCreate assetDtoCreate = new(gallery.Id, relativePath, previewPath, group?.Id, group == null ? null : i + positionOffset);
-                await assetsService.CreateAssetAsync(assetDtoCreate);
+                await assetsService.StageCreateAssetAsync(assetDtoCreate);
             }
         }
+
 
         private static (IEnumerable<FilesGroup>, int) GetFiles(GaleryData data)
         {

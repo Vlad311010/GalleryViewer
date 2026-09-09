@@ -57,7 +57,7 @@ namespace App.Services
             }
         }
 
-        public async Task<AssetDto> CreateAssetAsync(AssetDtoCreate dto)
+        public async Task<AssetDto> StageCreateAssetAsync(AssetDtoCreate dto)
         {
             Gallery? targetGallery = await context.Galleries.FindAsync(dto.GalleryId);
             EntityNotFoundException<Gallery>.ThrowIfNull(targetGallery, dto.GalleryId);
@@ -108,7 +108,7 @@ namespace App.Services
             return deleted > 0;
         }
 
-        public async Task<int> DeleteRangeAsync(IEnumerable<int> ids)
+        public async Task<int> StageDeleteRangeAsync(IEnumerable<int> ids)
         {
             ArgumentNullException.ThrowIfNull(ids);
             if (ids.Count() == 0)

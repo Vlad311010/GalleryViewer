@@ -76,7 +76,7 @@ namespace Tools
                 LiveSyncStatusDisplay.DisplaySyncState(state);
             };
 
-            await gallerySync.SyncronizeGalleryAsync(data);
+            await gallerySync.Syncronize(data);
 
             LiveSyncStatusDisplay.Stop();
             return 0;
