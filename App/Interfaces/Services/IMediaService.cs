@@ -1,4 +1,4 @@
-﻿using App.Dto.Media;
+﻿using App.Dtos.Media;
 
 namespace App.Interfaces.Services
 {

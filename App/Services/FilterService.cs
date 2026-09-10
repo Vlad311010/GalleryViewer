@@ -1,5 +1,5 @@
-﻿using App.Dto.Filter;
-using App.Enum;
+﻿using App.Dtos.Filter;
+using App.Enums;
 using App.Exceptions;
 using App.Interfaces.Services;
 using Data.Entities;

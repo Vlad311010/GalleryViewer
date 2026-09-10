@@ -1,9 +1,12 @@
-﻿using App.Dto.Asset;
-using App.Dto.Group;
-using App.Enum;
+﻿using App.Commands;
+using App.Dtos.Asset;
+using App.Dtos.Group;
+using App.Enums;
 using App.Exceptions;
 using App.Interfaces.Services;
+using App.Validators;
 using Data.Entities;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Enums;
@@ -120,21 +123,23 @@ namespace App.Services
             return assets.Length;
         }
 
-        public async Task SetPositionsAsync(int groupId, IEnumerable<AssetPosition> positions)
+        public async Task SetPositionsAsync(SetAssetsPositionsCommand command)
         {
+            await new SetAssetsPositionsCommandValidator().ValidateAndThrowAsync(command);
+
             AssetGroup? group = await context.AssetGroups
                 .Include(x => x.Assets)
-                .Where(x => x.Id == groupId)
+                .Where(x => x.Id == command.GroupId)
                 .SingleOrDefaultAsync();
 
-            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, command.GroupId);
 
             Asset[] assets = [.. group.Assets];
             Asset previewAsset = assets
                 .Single(x => x.GroupPosition!.Value == group.CoverAssetIdx);
 
-            positions = Normalize(positions);
-            Dictionary<int, int> positionsById = positions.ToDictionary(x => x.Id, x => x.Position);
+            IEnumerable<AssetPosition> positions = Normalize(command.Positions);
+            Dictionary<int, int> positionsById = command.Positions.ToDictionary(x => x.Id, x => x.Position);
             foreach (Asset asset in group.Assets)
             {
                 if (positionsById.TryGetValue(asset.Id, out int position))
@@ -149,22 +154,24 @@ namespace App.Services
 
             logger.LogInformation(
                 "Asset positions updated for group {GroupId}. {AssetCount} assets reordered.",
-                groupId,
+                command.GroupId,
                 positionsById.Count);
 
         }
 
-        public async Task SetCover(int groupId, int assetId)
+        public async Task SetCover(SetGroupCoverCommand command)
         {
-            AssetGroup? group = await context.AssetGroups.FindAsync(groupId);
-            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+            await new SetGroupCoverCommandValidator().ValidateAndThrowAsync(command);
 
-            Asset? asset = await context.Assets.FindAsync(assetId);
-            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+            AssetGroup? group = await context.AssetGroups.FindAsync(command.GroupId);
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, command.GroupId);
+
+            Asset? asset = await context.Assets.FindAsync(command.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, command.AssetId);
 
             if (asset.GroupId != group.Id)
             {
-                throw new EntityAssociationException<Asset, AssetGroup>(assetId, groupId, $"Asset '{assetId}' is not associated with group '{groupId}'.");
+                throw new EntityAssociationException<Asset, AssetGroup>(command.AssetId, command.GroupId, $"Asset '{command.AssetId}' is not associated with group '{command.GroupId}'.");
             }
 
             group.CoverAssetIdx = asset.GroupPosition!.Value;
@@ -173,7 +180,7 @@ namespace App.Services
 
             logger.LogInformation(
                 "Cover asset updated for group {GroupId}. Cover asset is {CoverAssetId}",
-                groupId,
+                command.GroupId,
                 asset.Id);
         }
 

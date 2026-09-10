@@ -1,4 +1,4 @@
-﻿using App.Enum;
+﻿using App.Enums;
 
 namespace GalleryViewer.Models.Response
 {

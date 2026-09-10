@@ -1,4 +1,4 @@
-﻿using App.Dto.Tag;
+﻿using App.Dtos.Tag;
 
 namespace GalleryViewer.Models.Response
 {

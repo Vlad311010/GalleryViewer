@@ -1,6 +1,8 @@
-﻿using App.Dto.Asset;
-using App.Dto.Gallery;
-using App.Dto.Group;
+﻿using App.Commands;
+using App.Dtos.Asset;
+using App.Dtos.Gallery;
+using App.Dtos.Group;
+using App.Enums;
 using App.PreviewCreation;
 using App.Services;
 using Microsoft.Extensions.Logging;
@@ -64,7 +66,7 @@ namespace Tools.Sync
                 if (gallery == null)
                 {
                     requiresInitialThumbnail = true;
-                    GalleryDtoCreate galleryCreate = new GalleryDtoCreate(galleryData.Name, galleryData.Path);
+                    GalleryCreateCommand galleryCreate = new GalleryCreateCommand(galleryData.Name, galleryData.Path);
                     gallery = await galleriesService.Create(galleryCreate);
 
                     logger.Info(
@@ -238,11 +240,11 @@ namespace Tools.Sync
 
             foreach (var asset in outOfSyncAsset)
             {
-                if (asset.Type == App.Enum.SyncMismatchType.OnlyDb) // files were removed from file system
+                if (asset.Type == SyncMismatchType.OnlyDb) // files were removed from file system
                 {
                     assetIdsToDelete.Add(asset.id!.Value);
                 }
-                else if (asset.Type == App.Enum.SyncMismatchType.OnlyFileSystem) // new files added inside folder in file system
+                else if (asset.Type == SyncMismatchType.OnlyFileSystem) // new files added inside folder in file system
                 {
                     missingAssetPaths.Add(asset.RelativePath);
                 }
@@ -304,7 +306,7 @@ namespace Tools.Sync
                     relativePath)
                 );
 
-                AssetDtoCreate assetDtoCreate = new(gallery.Id, relativePath, previewPath, group?.Id, group == null ? null : i + positionOffset);
+                AssetCreateCommand assetDtoCreate = new(gallery.Id, relativePath, previewPath, group?.Id, group == null ? null : i + positionOffset);
                 await assetsService.StageCreateAssetAsync(assetDtoCreate);
             }
         }

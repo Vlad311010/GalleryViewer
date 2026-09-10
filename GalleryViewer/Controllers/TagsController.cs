@@ -1,5 +1,6 @@
-﻿using App.Dto.Filter;
-using App.Dto.Tag;
+﻿using App.Commands;
+using App.Dtos.Filter;
+using App.Dtos.Tag;
 using App.Interfaces.Services;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
@@ -57,9 +58,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Create([FromBody] TagCreateRequestModel request)
         {
-            TagDtoCreate createDto = new TagDtoCreate { Name = request.Name, Category = request.Category, CanonicalId = null };
-            TagDtoInfo tag = await tagsServices.Create(createDto);
-
+            CreateTagCommand command = new(request.Name, request.Category, null);
+            TagDtoInfo tag = await tagsServices.Create(command);
 
             return Created((string)null!, new TagCreateResponseModel(tag.Id, tag.Name, tag.Category));
         }

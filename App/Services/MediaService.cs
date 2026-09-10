@@ -1,5 +1,5 @@
-﻿using App.Dto.Media;
-using App.Enum;
+﻿using App.Dtos.Media;
+using App.Enums;
 using App.Exceptions;
 using App.Extensions;
 using App.Interfaces.Services;

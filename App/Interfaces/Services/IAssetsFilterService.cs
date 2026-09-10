@@ -1,4 +1,4 @@
-﻿using App.Dto.Filter;
+﻿using App.Dtos.Filter;
 using Shared.Models;
 
 namespace App.Interfaces.Services

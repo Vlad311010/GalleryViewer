@@ -1,9 +1,12 @@
-﻿using App.Dto.Filter;
-using App.Dto.Tag;
+﻿using App.Commands;
+using App.Dtos.Filter;
+using App.Dtos.Tag;
 using App.Exceptions;
 using App.Interfaces.Services;
 using App.Mappers;
+using App.Validators;
 using Data.Entities;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared;
@@ -64,25 +67,27 @@ namespace App.Services
             ).ToArray();
         }
 
-        public async Task<TagDtoInfo> Create(TagDtoCreate tagDtoCreate)
+        public async Task<TagDtoInfo> Create(CreateTagCommand command)
         {
+            await new CreateTagCommandValidator().ValidateAndThrowAsync(command);
+
             TagCategory? tagCategory = await context.TagCategories
                 .AsNoTracking()
-                .Where(x => x.Name == tagDtoCreate.Category)
+                .Where(x => x.Name == command.Category)
                 .SingleOrDefaultAsync();
 
-            EntityNotFoundException<TagCategory>.ThrowIfNull(tagCategory, tagDtoCreate.Category);
+            EntityNotFoundException<TagCategory>.ThrowIfNull(tagCategory, command.Category);
 
-            if (await context.Tags.Where(x => x.Name == tagDtoCreate.Name).AnyAsync())
+            if (await context.Tags.Where(x => x.Name == command.Name).AnyAsync())
             {
-                throw new EntityAlreadyExistsException<Tag>(tagDtoCreate.Name);
+                throw new EntityAlreadyExistsException<Tag>(command.Name);
             }
 
             Tag entity = new Tag
             {
-                Name = NormalizeTag(tagDtoCreate.Name),
+                Name = NormalizeTag(command.Name),
                 CategoryId = tagCategory.Id,
-                CanonicalId = tagDtoCreate.CanonicalId,
+                CanonicalId = command.CanonicalId,
             };
 
             context.Tags.Add(entity);

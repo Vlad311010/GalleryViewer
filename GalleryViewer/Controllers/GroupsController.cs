@@ -1,4 +1,5 @@
-﻿using App.Dto.Group;
+﻿using App.Commands;
+using App.Dtos.Group;
 using App.Interfaces.Services;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
@@ -33,7 +34,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SetAssetPositions([FromRoute] int id, [FromBody] SetAssetPositionsRequestModel request)
         {
-            await groupsService.SetPositionsAsync(id, request.Positions);
+            SetAssetsPositionsCommand command = new(id, request.Positions);
+            await groupsService.SetPositionsAsync(command);
             return NoContent();
         }
 
@@ -43,7 +45,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SetGroupCoverAsset([FromRoute] int id, [FromBody] SetGroupCoverRequestModel request)
         {
-            await groupsService.SetCover(id, request.AssetId);
+            SetGroupCoverCommand command = new(id, request.AssetId);
+            await groupsService.SetCover(command);
             return NoContent();
         }
     }

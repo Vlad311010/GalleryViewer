@@ -1,6 +1,6 @@
-﻿using App.Dto.Asset;
-using App.Dto.Group;
-using Shared.Models;
+﻿using App.Commands;
+using App.Dtos.Asset;
+using App.Dtos.Group;
 
 namespace App.Interfaces.Services
 {
@@ -12,7 +12,7 @@ namespace App.Interfaces.Services
         Task<AssetGroupDto?> GetPhysicalGroup(int galleryId, string physicalPath);
         bool IsSynchronized(AssetGroupDto group, string[] files, out List<AssetSynchronizationDto> outOfSyncFiles);
         Task<int> StageNormalizePositionsAsync(int groupId);
-        Task SetCover(int groupId, int assetId);
-        Task SetPositionsAsync(int groupId, IEnumerable<AssetPosition> positions);
+        Task SetCover(SetGroupCoverCommand command);
+        Task SetPositionsAsync(SetAssetsPositionsCommand command);
     }
 }

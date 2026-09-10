@@ -1,7 +1,10 @@
-﻿using App.Dto.Gallery;
+﻿using App.Commands;
+using App.Dtos.Gallery;
 using App.Exceptions;
 using App.Interfaces.Services;
+using App.Validators;
 using Data.Entities;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Enums;
@@ -11,12 +14,14 @@ namespace App.Services
 {
     public class GalleriesService(AssetsCatalogContext context, ILogger<GalleriesService> logger) : IGalleriesService
     {
-        public async Task<GalleryDto> Create(GalleryDtoCreate dto)
+        public async Task<GalleryDto> Create(GalleryCreateCommand command)
         {
+            await new GalleryCreateCommandValidator().ValidateAndThrowAsync(command);
+
             Gallery entity = new Gallery
             {
-                Name = dto.Name.ToLower(),
-                Path = dto.Path
+                Name = command.Name.ToLower(),
+                Path = command.Path
             };
 
             Gallery createdEntity = (await context.Galleries.AddAsync(entity)).Entity;

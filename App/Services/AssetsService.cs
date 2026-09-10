@@ -1,11 +1,14 @@
-﻿using App.Dto.Asset;
-using App.Dto.Tag;
+﻿using App.Commands;
+using App.Dtos.Asset;
+using App.Dtos.Tag;
 using App.Exceptions;
 using App.Extensions;
 using App.Interfaces.Services;
 using App.Mappers;
 using App.Utils;
+using App.Validators;
 using Data.Entities;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Enums;
@@ -57,12 +60,14 @@ namespace App.Services
             }
         }
 
-        public async Task<AssetDto> StageCreateAssetAsync(AssetDtoCreate dto)
+        public async Task<AssetDto> StageCreateAssetAsync(AssetCreateCommand command)
         {
-            Gallery? targetGallery = await context.Galleries.FindAsync(dto.GalleryId);
-            EntityNotFoundException<Gallery>.ThrowIfNull(targetGallery, dto.GalleryId);
+            await new AssetCreateCommandValidator().ValidateAndThrowAsync(command);
 
-            string assetFilePath = Path.Combine(targetGallery.Path, dto.RelativePath);
+            Gallery? targetGallery = await context.Galleries.FindAsync(command.GalleryId);
+            EntityNotFoundException<Gallery>.ThrowIfNull(targetGallery, command.GalleryId);
+
+            string assetFilePath = Path.Combine(targetGallery.Path, command.RelativePath);
             if (!mediaAccessorService.Exists(assetFilePath))
             {
                 throw new MediaNotFoundException("Asset file not found", assetFilePath);
@@ -76,16 +81,16 @@ namespace App.Services
             string hash = await Md5Hash.ComputeAsync(assetData);
             Asset entity = new()
             {
-                GalleryId = dto.GalleryId,
-                RelativePath = dto.RelativePath,
-                MimeType = dto.RelativePath.ToMimeType(),
+                GalleryId = command.GalleryId,
+                RelativePath = command.RelativePath,
+                MimeType = command.RelativePath.ToMimeType(),
                 Hash = hash,
                 CreationTime = modifiedTime,
                 ImportTime = currentTime,
-                PreviewPath = dto.PreviewPath,
+                PreviewPath = command.PreviewPath,
 
-                GroupId = dto.groupId,
-                GroupPosition = dto.groupPosition
+                GroupId = command.GroupId,
+                GroupPosition = command.GroupPosition
             };
 
             entity = (await context.Assets.AddAsync(entity)).Entity;
@@ -129,8 +134,9 @@ namespace App.Services
         {
             return await context.Assets
                 .AnyAsync(x =>
-                x.GalleryId == galleryId
-                && x.RelativePath == relativePath);
+                    x.GalleryId == galleryId
+                    && x.RelativePath == relativePath
+                );
         }
 
 
@@ -168,23 +174,25 @@ namespace App.Services
         }
 
 
-        public async Task AddTags(int assetId, string[] tags)
+        public async Task AddTags(AssetAddTagsCommand command)
         {
-            Asset? asset = await context.Assets.FindAsync(assetId);
-            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+            await new AssetAddTagsCommandValidator().ValidateAndThrowAsync(command);
 
-            tags = tags
+            Asset? asset = await context.Assets.FindAsync(command.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, command.AssetId);
+
+            string[] tags = command.Tags
                 .Distinct()
                 .ToArray();
 
-            var existingTags = await context.Tags
+            var definedTags = await context.Tags
                 .Where(x => tags.Contains(x.Name))
                 .Select(x => new { x.Id, x.Name })
                 .ToArrayAsync();
 
             string[] invalidTags = tags
                 .Except(
-                    existingTags
+                    definedTags
                     .Select(x => x.Name))
                 .ToArray();
 
@@ -193,45 +201,48 @@ namespace App.Services
                 throw new UnknownTagsException("One or more tags are undefined", invalidTags);
             }
 
-            int[] existingTagIds = [.. existingTags.Select(x => x.Id)];
+            int[] definedTagIds = [.. definedTags.Select(x => x.Id)];
 
             int[] duplicatedTags = await context.AssetTags
-                .Where(x => x.AssetId == assetId && existingTagIds.Contains(x.TagId))
+                .Where(x => x.AssetId == command.AssetId && definedTagIds.Contains(x.TagId))
                 .Select(x => x.TagId)
                 .ToArrayAsync();
 
-            int[] tagsToAdd = [.. existingTagIds.Where(x => !duplicatedTags.Contains(x))];
+            int[] tagsToAdd = [.. definedTagIds.Where(x => !duplicatedTags.Contains(x))];
 
             foreach (var tag in tagsToAdd)
             {
-                context.AssetTags.Add(new AssetTag { AssetId = assetId, TagId = tag });
+                context.AssetTags.Add(new AssetTag { AssetId = command.AssetId, TagId = tag });
             }
 
             logger.Info(
                 "Added {TagCount} tags to asset {AssetId}", ApplicationArea.Service,
                 tagsToAdd.Count(),
-                assetId);
+                command.AssetId);
 
             await context.SaveChangesAsync();
         }
 
-        public async Task RemoveTag(int assetId, string tag)
+        public async Task RemoveTag(AssetRemoveTagCommand command)
         {
-            Asset? asset = await context.Assets.FindAsync(assetId);
-            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+            await new AssetRemoveTagCommandValidator().ValidateAndThrowAsync(command);
 
+            Asset? asset = await context.Assets.FindAsync(command.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, command.AssetId);
+
+            var tag = command.Tag.ToLowerInvariant();
             Tag? tagEntity = await context.Tags
                 .AsNoTracking()
                 .Where(x => x.Name == tag)
                 .SingleOrDefaultAsync();
             EntityNotFoundException<Tag>.ThrowIfNull(tagEntity, tag);
 
-            context.AssetTags.Remove(new AssetTag { AssetId = assetId, TagId = tagEntity.Id });
+            context.AssetTags.Remove(new AssetTag { AssetId = command.AssetId, TagId = tagEntity.Id });
 
             logger.Info(
                 "Removed {TagId} tag from asset{AssetId}", ApplicationArea.Service,
                 tagEntity.Id,
-                assetId);
+                command.AssetId);
 
             await context.SaveChangesAsync();
         }

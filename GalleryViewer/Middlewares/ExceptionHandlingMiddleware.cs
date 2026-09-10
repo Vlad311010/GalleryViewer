@@ -1,4 +1,5 @@
 ﻿using App.Exceptions;
+using FluentValidation;
 using GalleryViewer.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,6 +30,10 @@ namespace GalleryViewer.Middlewares
         {
             switch (exception)
             {
+                case ValidationException validationException:
+                    await HandleValidationExceptionAsync(context, validationException);
+                    break;
+
                 case AppException appException:
                     await HandleAppExceptionAsync(context, appException);
                     break;
@@ -45,6 +50,26 @@ namespace GalleryViewer.Middlewares
                     });
                     break;
             }
+        }
+
+        private static async Task HandleValidationExceptionAsync(HttpContext context, ValidationException exception)
+        {
+            var errors = exception.Errors
+                .GroupBy(x => x.PropertyName)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.Select(e => e.ErrorMessage).ToArray());
+
+            var problem = new ValidationProblemDetails(errors)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation failed",
+                Type = "/problems/validation"
+            };
+
+            context.Response.StatusCode = problem.Status.Value;
+
+            await context.Response.WriteAsJsonAsync(problem);
         }
 
         private static async Task HandleAppExceptionAsync(HttpContext context, AppException exception)

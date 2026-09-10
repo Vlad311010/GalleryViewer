@@ -1,4 +1,5 @@
-﻿using App.Dto.Media;
+﻿using App.Dtos.Media;
+using App.Enums;
 using App.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,7 +28,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetPreview([FromRoute] int id)
         {
-            var requestDto = new MediaDtoFetch(App.Enum.DisplayItemType.Asset, id);
+            var requestDto = new MediaDtoFetch(DisplayItemType.Asset, id);
             var response = await mediaService.GetAssetPreviewAsync(requestDto);
 
             return File(response.MediaStream, response.MimeType, true);
@@ -40,7 +41,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetGroupPreview([FromRoute] int id)
         {
-            var requestDto = new MediaDtoFetch(App.Enum.DisplayItemType.Group, id);
+            var requestDto = new MediaDtoFetch(DisplayItemType.Group, id);
             var response = await mediaService.GetAssetPreviewAsync(requestDto);
 
             return File(response.MediaStream, response.MimeType, true);

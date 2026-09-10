@@ -1,5 +1,6 @@
-﻿using App.Dto.Asset;
-using App.Dto.Tag;
+﻿using App.Commands;
+using App.Dtos.Asset;
+using App.Dtos.Tag;
 using App.Interfaces.Services;
 using GalleryViewer.Helpers;
 using GalleryViewer.Models;
@@ -53,7 +54,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<InvalidTagsProblemDetails>(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> AddTags([FromRoute] int assetId, [FromBody] IEnumerable<string> tags)
         {
-            await assetsService.AddTags(assetId, [.. tags.Select(x => x.NormalizeTag())]);
+            AssetAddTagsCommand command = new(assetId, [.. tags.Select(x => x.NormalizeTag())]);
+            await assetsService.AddTags(command);
 
             return NoContent();
         }
@@ -64,7 +66,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveTag([FromRoute] int assetId, [FromRoute] string tag)
         {
-            await assetsService.RemoveTag(assetId, tag.NormalizeTag());
+            AssetRemoveTagCommand command = new(assetId, tag.NormalizeTag());
+            await assetsService.RemoveTag(command);
 
             return NoContent();
         }

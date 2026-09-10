@@ -1,4 +1,4 @@
-﻿using App.Dto.Filter;
+﻿using App.Dtos.Filter;
 using App.Interfaces.Services;
 using GalleryViewer.Helpers;
 using GalleryViewer.Mappers;

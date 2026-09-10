@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="Dto\Asset\AssetDtoCreate.cs" />
+    <None Include="Commands\AssetCreateCommand.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="FFMpegCore" Version="5.4.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.3.11" />
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.13" />
   </ItemGroup>
