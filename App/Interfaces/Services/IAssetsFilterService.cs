@@ -1,11 +1,12 @@
-﻿using App.Dtos.Filter;
+﻿using App.Models.Dtos.Filter;
+using App.Models.Queries;
 using Shared.Models;
 
 namespace App.Interfaces.Services
 {
     public interface IAssetsFilterService
     {
-        Task<PagedData<DisplayItemDto>> ListAsync(string galleryName, PaginationDto filter, TagFiltersDto tagFilters);
-        Task<PagedData<DisplayItemDto>> ListGroupAssetsAsync(int groupId, PaginationDto filter);
+        Task<PagedData<DisplayItemDto>> ListAsync(ListAssetsQuery query);
+        Task<PagedData<DisplayItemDto>> ListGroupAssetsAsync(ListGroupAssetsQuery query);
     }
 }

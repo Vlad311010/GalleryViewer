@@ -1,4 +1,4 @@
-﻿using App.Dtos.Filter;
+﻿using App.Models.Dtos.Filter;
 using GalleryViewer.Models.Response;
 
 namespace GalleryViewer.Mappers

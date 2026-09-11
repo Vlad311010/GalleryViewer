@@ -1,6 +1,7 @@
-﻿using App.Dtos.Media;
-using App.Enums;
+﻿using App.Enums;
 using App.Interfaces.Services;
+using App.Models.Dtos.Media;
+using App.Models.Queries;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GalleryViewer.Controllers
@@ -15,8 +16,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAsset([FromRoute] int id)
         {
-            var requestDto = new AssetMediaDtoFetch(id);
-            var response = await mediaService.GetAssetMediaAsync(requestDto);
+            var query = new AssetQuery(id);
+            var response = await mediaService.GetAssetMediaAsync(query);
 
             return File(response.MediaStream, response.MimeType, true);
         }
@@ -28,8 +29,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetPreview([FromRoute] int id)
         {
-            var requestDto = new MediaDtoFetch(DisplayItemType.Asset, id);
-            var response = await mediaService.GetAssetPreviewAsync(requestDto);
+            var query = new MediaQuery(DisplayItemType.Asset, id);
+            var response = await mediaService.GetPreviewAsync(query);
 
             return File(response.MediaStream, response.MimeType, true);
         }
@@ -41,8 +42,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetGroupPreview([FromRoute] int id)
         {
-            var requestDto = new MediaDtoFetch(DisplayItemType.Group, id);
-            var response = await mediaService.GetAssetPreviewAsync(requestDto);
+            var query = new MediaQuery(DisplayItemType.Group, id);
+            var response = await mediaService.GetPreviewAsync(query);
 
             return File(response.MediaStream, response.MimeType, true);
         }
@@ -54,8 +55,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetMimeType([FromRoute] int id)
         {
-            var requestDto = new AssetMediaDtoFetch(id);
-            var mimeType = await mediaService.GetAssetMimeType(requestDto);
+            var query = new AssetQuery(id);
+            var mimeType = await mediaService.GetAssetMimeType(query);
 
             return Ok(mimeType);
         }

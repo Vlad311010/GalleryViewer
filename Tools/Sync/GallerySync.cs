@@ -1,8 +1,10 @@
 ﻿using App.Commands;
-using App.Dtos.Asset;
-using App.Dtos.Gallery;
-using App.Dtos.Group;
 using App.Enums;
+using App.Models.Commands;
+using App.Models.Dtos.Asset;
+using App.Models.Dtos.Gallery;
+using App.Models.Dtos.Group;
+using App.Models.Queries;
 using App.PreviewCreation;
 using App.Services;
 using Microsoft.Extensions.Logging;
@@ -62,7 +64,7 @@ namespace Tools.Sync
                 );
 
                 bool requiresInitialThumbnail = false;
-                GalleryDto? gallery = await galleriesService.GetByNameAsync(galleryData.Name);
+                GalleryDto? gallery = await galleriesService.GetByNameAsync(new(galleryData.Name));
                 if (gallery == null)
                 {
                     requiresInitialThumbnail = true;
@@ -181,12 +183,15 @@ namespace Tools.Sync
                     continue;
                 }
 
-                AssetGroupDto? group = await gropusService.GetPhysicalGroup(gallery.Id, filesGroup.Folder);
+                AssetGroupDto? group = await gropusService.GetPhysicalGroup(new PhysicalAssetGroupQuery(gallery.Id, filesGroup.Folder));
                 if (group == null)
                 {
                     await CreateGroupAsync(gallery, filesGroup);
                 }
-                else if (!gropusService.IsSynchronized(group, filesGroup.Files, out List<AssetSynchronizationDto> outOfSyncAsset))// out of sync
+                else if (!gropusService.IsSynchronized(
+                    new AssetGroupSynchronizationQuery(group.Id, filesGroup.Files),
+                    out List<AssetSynchronizationDto> outOfSyncAsset)
+                ) // out of sync
                 {
                     await SyncGroupAsync(gallery, group, outOfSyncAsset);
                 }
@@ -213,7 +218,7 @@ namespace Tools.Sync
             DateTime creationTime = Directory.GetCreationTimeUtc(
                 Path.Combine(gallery.Path, filesGroup.Folder));
 
-            AssetGroupDtoCreate createDto = new(gallery.Id, filesGroup.Folder, filesGroup.Folder, creationTime);
+            CreateAssetGroupCommand createDto = new(gallery.Id, filesGroup.Folder, filesGroup.Folder, creationTime);
             AssetGroupDto group = await gropusService.CreateGroup(createDto);
 
             ProgressUpdate(new SyncEvent(
@@ -264,11 +269,11 @@ namespace Tools.Sync
             int groupPositionOffset;
             if (deleted > 0)
             {
-                groupPositionOffset = 1 + await gropusService.StageNormalizePositionsAsync(group!.Id);
+                groupPositionOffset = 1 + await gropusService.StageNormalizePositionsAsync(new(group!.Id));
             }
             else
             {
-                groupPositionOffset = await gropusService.AssetsCountAsync(group!.Id);
+                groupPositionOffset = await gropusService.AssetsCountAsync(new(group!.Id));
             }
 
             await CreateAssets(gallery, [.. missingAssetPaths], group, groupPositionOffset);

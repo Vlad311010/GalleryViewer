@@ -1,7 +1,7 @@
-﻿using App.Commands;
-using App.Dtos.Asset;
-using App.Dtos.Tag;
-using App.Interfaces.Services;
+﻿using App.Interfaces.Services;
+using App.Models.Commands;
+using App.Models.Dtos.Asset;
+using App.Models.Dtos.Tag;
 using GalleryViewer.Helpers;
 using GalleryViewer.Models;
 using GalleryViewer.Models.Response;
@@ -18,7 +18,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetGroupPosition([FromRoute] int assetId)
         {
-            AssetGroupInfoDto? assetGroupInfo = await assetsService.GetAssetGroupInfo(assetId);
+            AssetGroupInfoDto? assetGroupInfo = await assetsService.GetAssetGroupInfo(new(assetId));
             if (assetGroupInfo == null)
             {
                 return ProblemDetailsBuilder.NotFoundProblem("Asset not found").AsObjectResult();
@@ -42,7 +42,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetTags([FromRoute] int assetId)
         {
-            AssetTagsDto tags = await assetsService.GetAssetTags(assetId);
+            AssetTagsDto tags = await assetsService.GetAssetTags(new(assetId));
 
             return Ok(new AssetTagsResponseModel(tags.Tags));
         }

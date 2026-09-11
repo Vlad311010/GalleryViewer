@@ -1,9 +1,10 @@
-﻿using App.Commands;
-using App.Dtos.Filter;
-using App.Dtos.Tag;
-using App.Exceptions;
+﻿using App.Exceptions;
 using App.Interfaces.Services;
 using App.Mappers;
+using App.Models;
+using App.Models.Commands;
+using App.Models.Dtos.Tag;
+using App.Models.Queries;
 using App.Validators;
 using Data.Entities;
 using FluentValidation;
@@ -26,15 +27,16 @@ namespace App.Services
             return entity.ToTagDto();
         }
 
-        public async Task<IEnumerable<TagDtoSearch>> SearchAsync(string searchValue, int take)
+        public async Task<IEnumerable<TagDtoSearch>> SearchAsync(TagSearchQuery query)
         {
-            string searchValueClean = searchValue.Replace(Constants.TAG_SPACE_CHARACTER, Constants.SPACE_CHARACTER);
-            string[] searchKeys = searchValue.Split(Constants.TAG_SPACE_CHARACTER, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new TagSearchQueryValidator().ValidateAndThrowAsync(query);
+
+            string searchValueNormalized = query.SearchKey.Replace(Constants.TAG_SPACE_CHARACTER, Constants.SPACE_CHARACTER);
+            string[] searchKeys = query.SearchKey.Split(Constants.TAG_SPACE_CHARACTER, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             var tags = await context.Tags
                 .AsNoTracking()
-                /*.Where(x => searchKeys.Any(k =>
-                    x.Name.Contains(k))
-                )*/
                 .Where(x => searchKeys.Any(k => // searchKey match againts every separate word in tag.
                     x.Name.StartsWith(k) ||
                     x.Name.Contains(Constants.SPACE_CHARACTER + k))
@@ -48,10 +50,10 @@ namespace App.Services
                     OccurrencesCount = context.AssetTags.Count(at => at.TagId == x.Id || at.Tag.CanonicalId == x.Id),
                     CanonicalName = x.Canonical == null ? null : x.Canonical.Name
                 })
-                .OrderByDescending(x => x.Name.StartsWith(searchValueClean))
+                .OrderByDescending(x => x.Name.StartsWith(searchValueNormalized))
                 .ThenByDescending(x => x.OccurrencesCount)
                 .ThenBy(x => x.Name)
-                .Take(take)
+                .Take(query.Take)
                 .ToArrayAsync();
 
             return tags.Select(x =>
@@ -108,13 +110,13 @@ namespace App.Services
             };
         }
 
-        public async Task<PagedData<TagDtoInfo>> ListAsync(PaginationDto paginationDto)
+        public async Task<PagedData<TagDtoInfo>> ListAsync(Pagination pagination)
         {
             var tags = await context.Tags
                 .AsNoTracking()
                 .OrderBy(x => x.Name) // TODO:? implement orderby parameter
-                .Skip(paginationDto.Skip)
-                .Take(paginationDto.Take)
+                .Skip(pagination.Skip)
+                .Take(pagination.Take)
                 .Select(x => new
                 {
                     x.Id,
@@ -138,7 +140,7 @@ namespace App.Services
                 CanonicalName = x.CanonicalName
             })];
 
-            return new PagedData<TagDtoInfo>(seletedTags, paginationDto.Skip, paginationDto.Take, totalCount);
+            return new PagedData<TagDtoInfo>(seletedTags, pagination.Skip, pagination.Take, totalCount);
         }
 
         private static string NormalizeTag(string tag)

@@ -1,6 +1,7 @@
-﻿using App.Commands;
-using App.Dtos.Group;
-using App.Interfaces.Services;
+﻿using App.Interfaces.Services;
+using App.Models.Commands;
+using App.Models.Dtos.Group;
+using App.Models.Queries;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetGroup([FromRoute] int id)
         {
-            AssetGroupDtoWithAssetPositions group = await groupsService.GetByIdAsync(id);
+            AssetGroupDtoWithAssetPositions group = await groupsService.GetByIdAsync(new AssetGroupQuery(id));
 
             return Ok(new AssetGroupResponseModel(
                 group.Id,

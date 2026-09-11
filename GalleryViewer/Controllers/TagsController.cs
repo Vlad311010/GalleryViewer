@@ -1,7 +1,8 @@
-﻿using App.Commands;
-using App.Dtos.Filter;
-using App.Dtos.Tag;
-using App.Interfaces.Services;
+﻿using App.Interfaces.Services;
+using App.Models;
+using App.Models.Commands;
+using App.Models.Dtos.Tag;
+using App.Models.Queries;
 using GalleryViewer.Models.Request;
 using GalleryViewer.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,8 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<IEnumerable<TagSearchResponseModel>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Search([FromQuery] string value, [FromQuery] int take = 5)
         {
-            var tags = await tagsServices.SearchAsync(value, take);
+            TagSearchQuery query = new(value, take);
+            IEnumerable<TagDtoSearch> tags = await tagsServices.SearchAsync(query);
 
             return Ok(
                 tags.Select(x => new TagSearchResponseModel()
@@ -35,10 +37,10 @@ namespace GalleryViewer.Controllers
         [HttpGet("list")]
         [EndpointName("listTags")]
         [ProducesResponseType<PagedData<TagInfoResponseModel>>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> List([FromQuery] BaseFilterRequestModel request)
+        public async Task<IActionResult> List([FromQuery] PaginationRequestModel request)
         {
-            PaginationDto filter = new() { Skip = request.Skip, Take = request.Take };
-            PagedData<TagDtoInfo> result = await tagsServices.ListAsync(filter);
+            Pagination pagination = new(request.Skip, request.Take);
+            PagedData<TagDtoInfo> result = await tagsServices.ListAsync(pagination);
 
             return Ok(
                 result.Cast(x => new TagInfoResponseModel()

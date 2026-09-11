@@ -1,8 +1,12 @@
-﻿using App.Dtos.Filter;
-using App.Enums;
+﻿using App.Enums;
 using App.Exceptions;
 using App.Interfaces.Services;
+using App.Models;
+using App.Models.Dtos.Filter;
+using App.Models.Queries;
+using App.Validators;
 using Data.Entities;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Shared.Models;
 
@@ -10,14 +14,15 @@ namespace App.Services
 {
     public class FilterService(AssetsCatalogContext context) : IAssetsFilterService
     {
-        public async Task<PagedData<DisplayItemDto>> ListAsync(string galleryName, PaginationDto filter, TagFiltersDto tagFilters)
+        public async Task<PagedData<DisplayItemDto>> ListAsync(ListAssetsQuery queryModel)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(galleryName);
-            ArgumentNullException.ThrowIfNull(filter);
-            ArgumentNullException.ThrowIfNull(tagFilters);
+            ArgumentNullException.ThrowIfNull(queryModel);
 
-            Gallery? gallery = await context.Galleries.SingleOrDefaultAsync(x => x.Name == galleryName);
-            EntityNotFoundException<Gallery>.ThrowIfNull(gallery, galleryName);
+            await new ListAssetsQueryValidator().ValidateAndThrowAsync(queryModel);
+
+
+            Gallery? gallery = await context.Galleries.SingleOrDefaultAsync(x => x.Name == queryModel.GalleryName);
+            EntityNotFoundException<Gallery>.ThrowIfNull(gallery, queryModel.GalleryName);
 
             var query = context.Assets.AsQueryable()
                 .Where(x => x.GalleryId == gallery.Id);
@@ -26,11 +31,11 @@ namespace App.Services
             ResolvedTags tags;
             try
             {
-                tags = await ResolveTagFiltersAsync(context, tagFilters);
+                tags = await ResolveTagFiltersAsync(queryModel.TagFilters);
             }
             catch (UnknownTagsException)
             {
-                return new(Array.Empty<DisplayItemDto>(), filter.Skip, filter.Take, 0);
+                return new(Array.Empty<DisplayItemDto>(), queryModel.Pagination.Skip, queryModel.Pagination.Take, 0);
             }
 
             query = ApplyTagFilters(query, tags);
@@ -52,40 +57,44 @@ namespace App.Services
             var pageDisplayItemKeys = await displayItemKeys
                 .OrderByDescending(x => x.CreationTime)
                 .ThenBy(x => x.Id)
-                .Skip(filter.Skip)
-                .Take(filter.Take)
+                .Skip(queryModel.Pagination.Skip)
+                .Take(queryModel.Pagination.Take)
                 .Select(x => new DisplayItemKey(x.Id, x.IsGroup, x.CreationTime))
                 .ToListAsync();
 
             List<DisplayItemDto> displayItems = await ResolveDisplayItemsAsync(pageDisplayItemKeys);
 
-            return new(displayItems, filter.Skip, filter.Take, await displayItemKeys.CountAsync());
+            return new(displayItems, queryModel.Pagination.Skip, queryModel.Pagination.Take, await displayItemKeys.CountAsync());
         }
 
 
-        public async Task<PagedData<DisplayItemDto>> ListGroupAssetsAsync(int groupId, PaginationDto filter)
+        public async Task<PagedData<DisplayItemDto>> ListGroupAssetsAsync(ListGroupAssetsQuery query)
         {
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new ListGroupAssetsQueryValidator().ValidateAndThrowAsync(query);
+
             IQueryable<Asset> groupAssetsQuery = context.Assets
-                .Where(x => x.GroupId == groupId);
+                .Where(x => x.GroupId == query.GroupId);
 
             int totalItems = groupAssetsQuery.Count();
 
             Asset[] takenAssets = await groupAssetsQuery
                 .OrderBy(x => x.GroupPosition)
-                .Skip(filter.Skip)
-                .Take(filter.Take)
+                .Skip(query.Pagination.Skip)
+                .Take(query.Pagination.Take)
                 .ToArrayAsync();
 
 
             return new PagedData<DisplayItemDto>(
                 takenAssets.Select(x => ToDisplayItemDto(x)),
-                filter.Skip,
-                filter.Take,
+                query.Pagination.Skip,
+                query.Pagination.Take,
                 totalItems
             );
         }
 
-        private static async Task<ResolvedTags> ResolveTagFiltersAsync(AssetsCatalogContext context, TagFiltersDto tagFilters)
+        private async Task<ResolvedTags> ResolveTagFiltersAsync(TagFilters tagFilters)
         {
             string[] tags = tagFilters.Tags
                 .Concat(tagFilters.ExcludeTags)

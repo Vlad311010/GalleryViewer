@@ -1,4 +1,4 @@
-﻿using App.Dtos.Asset;
+﻿using App.Models.Dtos.Asset;
 using Data.Entities;
 
 namespace App.Mappers

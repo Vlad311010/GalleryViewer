@@ -1,19 +1,26 @@
-﻿using App.Dtos.Media;
-using App.Enums;
+﻿using App.Enums;
 using App.Exceptions;
 using App.Extensions;
 using App.Interfaces.Services;
+using App.Models.Dtos.Media;
+using App.Models.Queries;
+using App.Validators;
 using Data.Entities;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace App.Services
 {
     public class MediaService(AssetsCatalogContext context, IMediaAccessorService mediaAccessorService) : IMediaService
     {
-        public async Task<MediaDto> GetAssetMediaAsync(AssetMediaDtoFetch assetRequest)
+        public async Task<MediaDto> GetAssetMediaAsync(AssetQuery query)
         {
-            Asset? asset = await context.Assets.FindAsync(assetRequest.AssetId);
-            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetRequest.AssetId);
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetQueryValidator().ValidateAndThrowAsync(query);
+
+            Asset? asset = await context.Assets.FindAsync(query.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, query.AssetId);
 
             Gallery? gallery = await context.Galleries.FindAsync(asset.GalleryId);
             EntityNotFoundException<Gallery>.ThrowIfNull(gallery, asset.GalleryId);
@@ -30,30 +37,38 @@ namespace App.Services
             );
         }
 
-        public async Task<string> GetAssetMimeType(AssetMediaDtoFetch assetRequest)
+        public async Task<string> GetAssetMimeType(AssetQuery query)
         {
-            Asset? asset = await context.Assets.FindAsync(assetRequest.AssetId);
-            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetRequest.AssetId);
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetQueryValidator().ValidateAndThrowAsync(query);
+
+            Asset? asset = await context.Assets.FindAsync(query.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, query.AssetId);
 
             return asset.MimeType;
         }
 
-        public async Task<MediaDto> GetAssetPreviewAsync(MediaDtoFetch mediaRequest)
+        public async Task<MediaDto> GetPreviewAsync(MediaQuery query)
         {
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new MediaQueryValidator().ValidateAndThrowAsync(query);
+
             string? previeFilePath = null;
-            switch (mediaRequest.ItemType)
+            switch (query.ItemType)
             {
                 case DisplayItemType.Asset:
-                    previeFilePath = await GetAssetPreviewPathAsync(mediaRequest.ItemId);
+                    previeFilePath = await GetAssetPreviewPathAsync(query.ItemId);
                     break;
                 case DisplayItemType.Group:
-                    previeFilePath = await GetGroupPreviewPathAsync(mediaRequest.ItemId);
+                    previeFilePath = await GetGroupPreviewPathAsync(query.ItemId);
                     break;
             }
 
             if (previeFilePath == null || !mediaAccessorService.Exists(previeFilePath))
             {
-                throw new MediaNotFoundException($"Preview file for {mediaRequest.ItemType} {mediaRequest.ItemId} not found.", previeFilePath);
+                throw new MediaNotFoundException($"Preview file for {query.ItemType} {query.ItemId} not found.", previeFilePath);
             }
 
             return new MediaDto(

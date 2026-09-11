@@ -1,5 +1,6 @@
-﻿using App.Dtos.Filter;
-using App.Interfaces.Services;
+﻿using App.Interfaces.Services;
+using App.Models;
+using App.Models.Queries;
 using GalleryViewer.Helpers;
 using GalleryViewer.Mappers;
 using GalleryViewer.Models.Request;
@@ -17,14 +18,15 @@ namespace GalleryViewer.Controllers
         [EndpointName("listItems")]
         public async Task<IActionResult> ListGalleryItems([FromRoute] string gallery, [FromQuery] GalleryFilterRequestModel request)
         {
-            PaginationDto filter = new() { Skip = request.Skip, Take = request.Take };
-            TagFiltersDto tagFilters = new TagFiltersDto
+            Pagination pagination = new(request.Skip, request.Take);
+            TagFilters tagFilters = new TagFilters
             {
                 Tags = request.Tags?.Select(x => x.NormalizeTag()).ToArray() ?? [],
                 ExcludeTags = request.ExcludeTags?.Select(x => x.NormalizeTag()).ToArray() ?? []
             };
 
-            var result = await filterService.ListAsync(gallery, filter, tagFilters);
+            ListAssetsQuery query = new(gallery, pagination, tagFilters);
+            var result = await filterService.ListAsync(query);
 
             return Ok(
                 result.Cast(x => x.ToDisplayItemResponseModel())
@@ -37,11 +39,12 @@ namespace GalleryViewer.Controllers
         [EndpointName("listGroup")]
         public async Task<IActionResult> ListGroupItems(
                 [FromRoute] int groupId,
-                [FromQuery] BaseFilterRequestModel filterRequest
+                [FromQuery] PaginationRequestModel filterRequest
             )
         {
-            PaginationDto filter = new() { Skip = filterRequest.Skip, Take = filterRequest.Take };
-            var result = await filterService.ListGroupAssetsAsync(groupId, filter);
+            Pagination pagination = new(filterRequest.Skip, filterRequest.Take);
+            ListGroupAssetsQuery query = new(groupId, pagination);
+            var result = await filterService.ListGroupAssetsAsync(query);
 
             return Ok(
                 result.Cast(x => x.ToDisplayItemResponseModel())

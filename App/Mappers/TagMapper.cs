@@ -1,4 +1,4 @@
-﻿using App.Dtos.Tag;
+﻿using App.Models.Dtos.Tag;
 using Data.Entities;
 
 namespace App.Mappers

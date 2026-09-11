@@ -1,15 +1,16 @@
-﻿using App.Commands;
-using App.Dtos.Filter;
-using App.Dtos.Tag;
+﻿using App.Models;
+using App.Models.Commands;
+using App.Models.Dtos.Tag;
+using App.Models.Queries;
 using Shared.Models;
 
 namespace App.Interfaces.Services
 {
     public interface ITagsService
     {
-        Task<TagDtoInfo> Create(CreateTagCommand tagDtoCreate);
+        Task<TagDtoInfo> Create(CreateTagCommand createTagCommand);
         Task<TagDto> Get(int id);
-        Task<PagedData<TagDtoInfo>> ListAsync(PaginationDto paginationDto);
-        Task<IEnumerable<TagDtoSearch>> SearchAsync(string searchValue, int take);
+        Task<PagedData<TagDtoInfo>> ListAsync(Pagination pagination);
+        Task<IEnumerable<TagDtoSearch>> SearchAsync(TagSearchQuery query);
     }
 }

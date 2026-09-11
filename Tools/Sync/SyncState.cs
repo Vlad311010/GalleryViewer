@@ -1,4 +1,4 @@
-﻿using App.Dtos.Group;
+﻿using App.Models.Dtos.Group;
 
 namespace Tools.Sync
 {

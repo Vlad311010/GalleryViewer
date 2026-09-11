@@ -1,17 +1,18 @@
-﻿using App.Commands;
-using App.Dtos.Asset;
-using App.Dtos.Group;
+﻿using App.Models.Commands;
+using App.Models.Dtos.Asset;
+using App.Models.Dtos.Group;
+using App.Models.Queries;
 
 namespace App.Interfaces.Services
 {
     public interface IGroupService
     {
-        Task<int> AssetsCountAsync(int groupId);
-        Task<AssetGroupDto> CreateGroup(AssetGroupDtoCreate dto);
-        Task<AssetGroupDtoWithAssetPositions> GetByIdAsync(int groupId);
-        Task<AssetGroupDto?> GetPhysicalGroup(int galleryId, string physicalPath);
-        bool IsSynchronized(AssetGroupDto group, string[] files, out List<AssetSynchronizationDto> outOfSyncFiles);
-        Task<int> StageNormalizePositionsAsync(int groupId);
+        Task<int> AssetsCountAsync(AssetGroupQuery query);
+        Task<AssetGroupDto> CreateGroup(CreateAssetGroupCommand command);
+        Task<AssetGroupDtoWithAssetPositions> GetByIdAsync(AssetGroupQuery query);
+        Task<AssetGroupDto?> GetPhysicalGroup(PhysicalAssetGroupQuery query);
+        bool IsSynchronized(AssetGroupSynchronizationQuery query, out List<AssetSynchronizationDto> outOfSyncFiles);
+        Task<int> StageNormalizePositionsAsync(AssetGroupQuery query);
         Task SetCover(SetGroupCoverCommand command);
         Task SetPositionsAsync(SetAssetsPositionsCommand command);
     }

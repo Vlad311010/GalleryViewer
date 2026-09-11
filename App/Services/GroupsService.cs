@@ -1,9 +1,10 @@
-﻿using App.Commands;
-using App.Dtos.Asset;
-using App.Dtos.Group;
-using App.Enums;
+﻿using App.Enums;
 using App.Exceptions;
 using App.Interfaces.Services;
+using App.Models.Commands;
+using App.Models.Dtos.Asset;
+using App.Models.Dtos.Group;
+using App.Models.Queries;
 using App.Validators;
 using Data.Entities;
 using FluentValidation;
@@ -23,19 +24,23 @@ namespace App.Services
         /// <param name="assets"></param>
         /// <param name="creationTimeOverride">If present will be a source of creation time. Used to override creation time of groups created of physical directoies</param>
         /// <returns></returns>
-        public async Task<AssetGroupDto> CreateGroup(AssetGroupDtoCreate dto)
+        public async Task<AssetGroupDto> CreateGroup(CreateAssetGroupCommand command)
         {
+            ArgumentNullException.ThrowIfNull(command);
+
+            await new CreateAssetGroupCommandValidator().ValidateAndThrowAsync(command);
+
             DateTime importTime = DateTime.UtcNow;
-            DateTime creationTime = dto.CreationTimeOverride.HasValue ? dto.CreationTimeOverride.Value : importTime;
+            DateTime creationTime = command.CreationTimeOverride.HasValue ? command.CreationTimeOverride.Value : importTime;
 
             AssetGroup entity = new AssetGroup()
             {
                 CoverAssetIdx = 0,
-                GalleryId = dto.GalleryId,
-                Title = string.IsNullOrWhiteSpace(dto.GroupName) ? null : dto.GroupName,
+                GalleryId = command.GalleryId,
+                Title = string.IsNullOrWhiteSpace(command.GroupName) ? null : command.GroupName,
                 CreationTime = creationTime,
                 ImportTime = importTime,
-                PhysicalRelativePath = dto.PhysicalPath
+                PhysicalRelativePath = command.PhysicalPath
             };
 
             entity = (await context.AssetGroups.AddAsync(entity)).Entity;
@@ -46,10 +51,14 @@ namespace App.Services
             return new AssetGroupDto(entity.Id, entity.GalleryId, entity.CoverAssetIdx, entity.Title, entity.PhysicalRelativePath);
         }
 
-        public async Task<AssetGroupDto?> GetPhysicalGroup(int galleryId, string physicalPath)
+        public async Task<AssetGroupDto?> GetPhysicalGroup(PhysicalAssetGroupQuery query)
         {
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new PhysicalAssetGroupQueryValidator().ValidateAndThrowAsync(query);
+
             return await context.AssetGroups
-                .Where(x => x.GalleryId == galleryId && x.PhysicalRelativePath == physicalPath)
+                .Where(x => x.GalleryId == query.GalleryId && x.PhysicalRelativePath == query.PhysicalPath)
                 .Select(x => new AssetGroupDto(
                     x.Id,
                     x.GalleryId,
@@ -60,10 +69,14 @@ namespace App.Services
         }
 
 
-        public bool IsSynchronized(AssetGroupDto group, string[] files, out List<AssetSynchronizationDto> outOfSyncFiles)
+        public bool IsSynchronized(AssetGroupSynchronizationQuery query, out List<AssetSynchronizationDto> outOfSyncFiles)
         {
+            ArgumentNullException.ThrowIfNull(query);
+
+            new AssetGroupSynchronizationQueryValidator().ValidateAndThrow(query);
+
             var groupAssets = context.Assets
-                .Where(x => x.GroupId == group.Id)
+                .Where(x => x.GroupId == query.GroupId)
                 .Select(x => new
                 {
                     x.Id,
@@ -71,22 +84,25 @@ namespace App.Services
                 })
                 .ToArray();
 
-            outOfSyncFiles = new List<AssetSynchronizationDto>();
-            foreach (var relativePath in files)
-            {
-                if (!groupAssets.Any(x => x.RelativePath == relativePath))
-                {
-                    outOfSyncFiles.Add(new(SyncMismatchType.OnlyFileSystem, null, relativePath));
-                }
-            }
 
-            foreach (var groupAsset in groupAssets)
-            {
-                if (!files.Any(x => x == groupAsset.RelativePath))
-                {
-                    outOfSyncFiles.Add(new(SyncMismatchType.OnlyDb, groupAsset.Id, groupAsset.RelativePath));
-                }
-            }
+            var filePaths = query.Files.ToHashSet();
+            var existingAssetPaths = groupAssets.Select(x => x.RelativePath).ToHashSet();
+            outOfSyncFiles =
+            [
+                .. filePaths
+                    .Except(existingAssetPaths)
+                    .Select(path => new AssetSynchronizationDto(
+                        SyncMismatchType.OnlyFileSystem,
+                        null,
+                        path)),
+
+                .. groupAssets
+                    .Where(x => !filePaths.Contains(x.RelativePath))
+                    .Select(x => new AssetSynchronizationDto(
+                        SyncMismatchType.OnlyDb,
+                        x.Id,
+                        x.RelativePath))
+            ];
 
             return !outOfSyncFiles.Any();
         }
@@ -97,14 +113,18 @@ namespace App.Services
         /// </summary>
         /// <param name="groupId"></param>
         /// <returns>Last position index</returns>
-        public async Task<int> StageNormalizePositionsAsync(int groupId)
+        public async Task<int> StageNormalizePositionsAsync(AssetGroupQuery query)
         {
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetGroupQueryValidator().ValidateAndThrowAsync(query);
+
             AssetGroup? group = await context.AssetGroups
                 .Include(x => x.Assets)
-                .Where(x => x.Id == groupId)
+                .Where(x => x.Id == query.GroupId)
                 .SingleOrDefaultAsync();
 
-            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, query.GroupId);
 
 
             Asset[] assets = [.. group.Assets];
@@ -125,6 +145,8 @@ namespace App.Services
 
         public async Task SetPositionsAsync(SetAssetsPositionsCommand command)
         {
+            ArgumentNullException.ThrowIfNull(command);
+
             await new SetAssetsPositionsCommandValidator().ValidateAndThrowAsync(command);
 
             AssetGroup? group = await context.AssetGroups
@@ -161,6 +183,8 @@ namespace App.Services
 
         public async Task SetCover(SetGroupCoverCommand command)
         {
+            ArgumentNullException.ThrowIfNull(command);
+
             await new SetGroupCoverCommandValidator().ValidateAndThrowAsync(command);
 
             AssetGroup? group = await context.AssetGroups.FindAsync(command.GroupId);
@@ -184,28 +208,36 @@ namespace App.Services
                 asset.Id);
         }
 
-        public async Task<int> AssetsCountAsync(int groupId)
+        public async Task<int> AssetsCountAsync(AssetGroupQuery query)
         {
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetGroupQueryValidator().ValidateAndThrowAsync(query);
+
             AssetGroup? group = await context.AssetGroups
                 .AsNoTracking()
-                .Where(x => x.Id == groupId)
+                .Where(x => x.Id == query.GroupId)
                 .SingleOrDefaultAsync();
 
-            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, query.GroupId);
 
             return await context.AssetGroups
-                .Where(x => x.Id == groupId)
+                .Where(x => x.Id == query.GroupId)
                 .Select(x => x.Assets.Count)
                 .SingleOrDefaultAsync();
         }
 
-        public async Task<AssetGroupDtoWithAssetPositions> GetByIdAsync(int groupId)
+        public async Task<AssetGroupDtoWithAssetPositions> GetByIdAsync(AssetGroupQuery query)
         {
-            AssetGroup? group = await context.AssetGroups.FindAsync(groupId);
-            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, groupId);
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetGroupQueryValidator().ValidateAndThrowAsync(query);
+
+            AssetGroup? group = await context.AssetGroups.FindAsync(query.GroupId);
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, query.GroupId);
 
             AssetPosition[] positions = await context.Assets
-                .Where(x => x.GroupId == groupId)
+                .Where(x => x.GroupId == query.GroupId)
                 .Select(x => new AssetPosition(x.Id, x.GroupPosition!.Value))
                 .ToArrayAsync();
 

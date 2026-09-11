@@ -1,10 +1,12 @@
 ﻿using App.Commands;
-using App.Dtos.Asset;
-using App.Dtos.Tag;
 using App.Exceptions;
 using App.Extensions;
 using App.Interfaces.Services;
 using App.Mappers;
+using App.Models.Commands;
+using App.Models.Dtos.Asset;
+using App.Models.Dtos.Tag;
+using App.Models.Queries;
 using App.Utils;
 using App.Validators;
 using Data.Entities;
@@ -40,9 +42,13 @@ namespace App.Services
             return asset?.ToAssetDto();
         }
 
-        public async Task<AssetGroupInfoDto?> GetAssetGroupInfo(int assetId)
+        public async Task<AssetGroupInfoDto?> GetAssetGroupInfo(AssetGroupInfoQuery query)
         {
-            Asset? asset = await context.Assets.FindAsync(assetId);
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetGroupInfoQueryValidator().ValidateAndThrowAsync(query);
+
+            Asset? asset = await context.Assets.FindAsync(query.AssetId);
 
             if (asset != null && asset.GroupId.HasValue)
             {
@@ -62,6 +68,8 @@ namespace App.Services
 
         public async Task<AssetDto> StageCreateAssetAsync(AssetCreateCommand command)
         {
+            ArgumentNullException.ThrowIfNull(command);
+
             await new AssetCreateCommandValidator().ValidateAndThrowAsync(command);
 
             Gallery? targetGallery = await context.Galleries.FindAsync(command.GalleryId);
@@ -140,10 +148,14 @@ namespace App.Services
         }
 
 
-        public async Task<AssetTagsDto> GetAssetTags(int assetId)
+        public async Task<AssetTagsDto> GetAssetTags(AssetTagsQuery query)
         {
-            Asset? asset = await context.Assets.FindAsync(assetId);
-            EntityNotFoundException<Asset>.ThrowIfNull(asset, assetId);
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetTagsQueryValidator().ValidateAndThrowAsync(query);
+
+            Asset? asset = await context.Assets.FindAsync(query.AssetId);
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, query.AssetId);
 
 
             int[] tagIds = await context.AssetTags
@@ -176,6 +188,8 @@ namespace App.Services
 
         public async Task AddTags(AssetAddTagsCommand command)
         {
+            ArgumentNullException.ThrowIfNull(command);
+
             await new AssetAddTagsCommandValidator().ValidateAndThrowAsync(command);
 
             Asset? asset = await context.Assets.FindAsync(command.AssetId);
@@ -225,6 +239,8 @@ namespace App.Services
 
         public async Task RemoveTag(AssetRemoveTagCommand command)
         {
+            ArgumentNullException.ThrowIfNull(command);
+
             await new AssetRemoveTagCommandValidator().ValidateAndThrowAsync(command);
 
             Asset? asset = await context.Assets.FindAsync(command.AssetId);

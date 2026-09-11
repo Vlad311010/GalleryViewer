@@ -1,4 +1,4 @@
-﻿using App.Commands;
+﻿using App.Models.Commands;
 using FluentValidation;
 
 namespace App.Validators

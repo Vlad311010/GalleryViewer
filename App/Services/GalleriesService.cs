@@ -1,7 +1,8 @@
-﻿using App.Commands;
-using App.Dtos.Gallery;
-using App.Exceptions;
+﻿using App.Exceptions;
 using App.Interfaces.Services;
+using App.Models.Commands;
+using App.Models.Dtos.Gallery;
+using App.Models.Queries;
 using App.Validators;
 using Data.Entities;
 using FluentValidation;
@@ -16,6 +17,8 @@ namespace App.Services
     {
         public async Task<GalleryDto> Create(GalleryCreateCommand command)
         {
+            ArgumentNullException.ThrowIfNull(command);
+
             await new GalleryCreateCommandValidator().ValidateAndThrowAsync(command);
 
             Gallery entity = new Gallery
@@ -36,9 +39,13 @@ namespace App.Services
             return new GalleryDto(createdEntity.Id, createdEntity.Name, createdEntity.Path, createdEntity.CoverSourceId);
         }
 
-        public async Task<GalleryDto?> GetByNameAsync(string galleryName)
+        public async Task<GalleryDto?> GetByNameAsync(GalleryByNameQuery query)
         {
-            Gallery? entity = await context.Galleries.SingleOrDefaultAsync(x => x.Name == galleryName);
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new GalleryByNameQueryValidator().ValidateAndThrowAsync(query);
+
+            Gallery? entity = await context.Galleries.SingleOrDefaultAsync(x => x.Name == query.GalleryName);
             return entity == null ? null : new GalleryDto(entity.Id, entity.Name, entity.Path, entity.CoverSourceId);
         }
 

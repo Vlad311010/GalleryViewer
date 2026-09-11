@@ -1,5 +1,6 @@
-﻿using App.Dtos.Gallery;
-using App.Interfaces.Services;
+﻿using App.Interfaces.Services;
+using App.Models.Dtos.Gallery;
+using App.Models.Queries;
 using GalleryViewer.Helpers;
 using GalleryViewer.Mappers;
 using GalleryViewer.Models.Response;
@@ -28,7 +29,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByName([FromRoute] string name)
         {
-            GalleryDto? gallery = await galleriesService.GetByNameAsync(name);
+            GalleryDto? gallery = await galleriesService.GetByNameAsync(new GalleryByNameQuery(name));
             if (gallery == null)
             {
                 return ProblemDetailsBuilder.NotFoundProblem($"Gallery {name} not found").AsObjectResult();
