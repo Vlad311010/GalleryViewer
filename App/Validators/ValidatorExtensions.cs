@@ -53,9 +53,8 @@ namespace App.Validators
                 .Must(path =>
                     path != null &&
                     !path.StartsWith('/') &&
-                    !path.Contains('\\') &&
                     !Path.IsPathRooted(path) &&
-                    !path.Split('/').Any(x => x == "" || x == ".."))
+                    !path.Split('/').Any(x => x == ".."))
                 .WithMessage("Path must be a valid relative path.");
         }
 

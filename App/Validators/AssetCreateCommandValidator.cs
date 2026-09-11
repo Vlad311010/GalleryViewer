@@ -20,7 +20,7 @@ namespace App.Validators
                 .EntityId();
 
             RuleFor(x => x.GroupPosition)
-                .GreaterThan(0)
+                .GreaterThanOrEqualTo(0)
                 .When(x => x.GroupPosition.HasValue);
         }
     }

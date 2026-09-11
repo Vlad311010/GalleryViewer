@@ -43,10 +43,10 @@
 		<TargetPath>appsettings.Tools.json</TargetPath>
 	</Content>
 
-	  <Content Update="appsettings.Development.json">
-		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  <None Update="appsettings.Development.json">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		<CopyToPublishDirectory>Never</CopyToPublishDirectory>
-	</Content>
+	</None>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
