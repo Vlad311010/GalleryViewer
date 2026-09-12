@@ -49,7 +49,7 @@
 	</None>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+	  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
 	<DefineConstants>$(DefineConstants);PUBLISHED_APP</DefineConstants>
   </PropertyGroup>
 

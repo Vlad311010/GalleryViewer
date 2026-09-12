@@ -1,15 +1,18 @@
-﻿namespace Tools.Display
+﻿using Spectre.Console;
+
+namespace Tools.Display
 {
     internal static class ConsoleDisplay
     {
-        public static void Display(string str)
+        public static void Display(string message, Color? color = null)
         {
-            Console.WriteLine(str);
+            color ??= Color.Default;
+            AnsiConsole.WriteLine(message, new Style(foreground: color));
         }
 
-        public static void DisplayError(string str)
+        public static void DisplayError(string message)
         {
-            Console.WriteLine($"Error: {str}");
+            Display($"Error: {message}", Color.Red);
         }
     }
 }

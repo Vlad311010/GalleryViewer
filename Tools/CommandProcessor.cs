@@ -35,6 +35,7 @@ namespace Tools
                 parser.ParseArguments<
                     SyncOptions,
                     PreviewOptions>(new[] { "--help" });
+
                 return 0;
             }
 

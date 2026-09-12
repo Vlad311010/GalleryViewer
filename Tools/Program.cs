@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Tools;
+using Tools.Display;
 
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 
@@ -46,5 +47,9 @@ using var context = new AssetsCatalogContext(dbOptions);
 CompositionRoot root = new(context, previewSettings);
 
 
-return await CommandProcessor.Run(args, root);
+int exitCode = await CommandProcessor.Run(args, root);
+
+ConsoleDisplay.Display("\nPress any key to close this window. . .");
+Console.ReadKey(true);
+return exitCode;
 

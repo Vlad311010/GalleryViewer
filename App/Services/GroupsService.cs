@@ -18,12 +18,6 @@ namespace App.Services
 {
     public class GroupsService(AssetsCatalogContext context, ILogger<GroupsService> logger) : IGroupService
     {
-        /// <summary>
-        /// </summary>
-        /// <param name="groupName"></param>
-        /// <param name="assets"></param>
-        /// <param name="creationTimeOverride">If present will be a source of creation time. Used to override creation time of groups created of physical directoies</param>
-        /// <returns></returns>
         public async Task<AssetGroupDto> CreateGroup(CreateAssetGroupCommand command)
         {
             ArgumentNullException.ThrowIfNull(command);
