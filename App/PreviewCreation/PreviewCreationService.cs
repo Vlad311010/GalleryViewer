@@ -28,26 +28,27 @@ namespace App.PreviewCreation
         }
 
 
-        public async Task<string> StageCreatePreviewAsync(string galleryRoot, string assetDataRef)
+        public async Task<string> CreatePreviewAsync(string galleryRoot, string assetRelativePath)
         {
-            string mimeType = assetDataRef.ToMimeType();
+            string mimeType = assetRelativePath.ToMimeType();
             string mediaType = mimeType.Split('/')[0];
             logger.Debug(
                 "Creating {MediaType} preview for {AssetSource}", ApplicationArea.Service,
                 mediaType,
-                assetDataRef
+                assetRelativePath
             );
 
             string preview;
+            string assetFilePath = Path.Combine(galleryRoot, assetRelativePath);
             switch (mediaType)
             {
                 case "image":
-                    preview = await GeneratePreviewAsync(galleryRoot, assetDataRef);
+                    preview = await GeneratePreviewAsync(galleryRoot, assetFilePath);
                     break;
                 case "video":
-                    using (Stream previewData = VideoFrameExtractor.GetFrame(assetDataRef, TimeSpan.FromSeconds(1)))
+                    using (Stream previewData = VideoFrameExtractor.GetFrame(assetFilePath, TimeSpan.FromSeconds(1)))
                     {
-                        preview = await GeneratePreviewAsync(galleryRoot, assetDataRef, previewData);
+                        preview = await GeneratePreviewAsync(galleryRoot, assetFilePath, previewData);
                     }
                     break;
                 default:
@@ -56,7 +57,7 @@ namespace App.PreviewCreation
 
             logger.Debug(
                 "Preview created for {AssetSource} at {PreviewPath}", ApplicationArea.Service,
-                assetDataRef,
+                assetRelativePath,
                 preview
             );
 
@@ -84,13 +85,11 @@ namespace App.PreviewCreation
                 })
             );
 
-
             string destination = ConstructPreviewPath(galleryRoot, assetSource);
             WebpEncoder encoder = new WebpEncoder
             {
-                Quality = settings.Quality
+                Quality = settings.Quality,
             };
-
 
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!); // make sure directorie exsist
             await image.SaveAsWebpAsync(destination, encoder);

@@ -2,7 +2,6 @@
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Serilog;
 using Tools;
 using Tools.Display;
@@ -40,12 +39,7 @@ if (previewSettings == null)
     return 1;
 }
 
-IOptions<PreviewSettings> previewSettingWrapper = Options.Create(previewSettings);
-
-using var context = new AssetsCatalogContext(dbOptions);
-
-CompositionRoot root = new(context, previewSettings);
-
+CompositionRoot root = new(dbOptions, previewSettings);
 
 int exitCode = await CommandProcessor.Run(args, root);
 

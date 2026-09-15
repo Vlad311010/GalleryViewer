@@ -67,19 +67,18 @@ namespace Tools
                 return 1;
             }
 
+            using GallerySync gallerySync = compositionRoot.CreateGallerySync(data);
 
             var displayTask = Task.Run(() => LiveSyncStatusDisplay.Start());
-
-            GallerySync gallerySync = compositionRoot.CreateGallerySync();
-
             gallerySync.OnProgressUpdated += (_, state) =>
             {
                 LiveSyncStatusDisplay.DisplaySyncState(state);
             };
 
-            await gallerySync.Syncronize(data);
+            await gallerySync.Syncronize();
 
-            LiveSyncStatusDisplay.Stop();
+            await LiveSyncStatusDisplay.StopAsync();
+
             return 0;
         }
 

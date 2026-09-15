@@ -1,5 +1,7 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Rendering;
+using System.Collections.Immutable;
+using System.Threading.Channels;
 using Tools.Sync;
 
 namespace Tools.Display
@@ -7,58 +9,67 @@ namespace Tools.Display
     public static class LiveSyncStatusDisplay
     {
         private static readonly object SyncLock = new();
+        private static readonly ManualResetEventSlim StopEvent = new(false);
 
-        private static LiveDisplayContext? _context;
+        private static LiveDisplayContext? context;
+
+        private static Channel<SyncState> StateChannel = Channel.CreateUnbounded<SyncState>();
+        private static Task displayTask = Task.CompletedTask;
 
         public static void Start()
         {
-            var states = new SyncState();
+            var initialState = new SyncState(
+                0,
+                new Dictionary<string, GallerySyncState>());
 
-            AnsiConsole.Live(CreateDisplay(states))
-                .Overflow(VerticalOverflow.Visible)
-                .Start(ctx =>
-                {
-                    _context = ctx;
+            StateChannel = Channel.CreateUnbounded<SyncState>();
 
-                    while (_context != null)
+            displayTask = Task.Run(() =>
+            {
+                AnsiConsole.Live(CreateDisplay(initialState))
+                    .Overflow(VerticalOverflow.Visible)
+                    .Start(ctx =>
                     {
-                    }
-                });
+                        while (StateChannel.Reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
+                        {
+                            while (StateChannel.Reader.TryRead(out var state))
+                            {
+                                ctx.UpdateTarget(CreateDisplay(state));
+                                ctx.Refresh();
+                            }
+                        }
+                    });
+            });
         }
 
         private static IRenderable CreateDisplay(SyncState state)
         {
             var rows = new List<IRenderable>();
 
-            foreach (var galleryName in state.GalleriesToProcess)
+            foreach (var galleryName in state.Galleries)
             {
-                rows.Add(CreatePanel(state, galleryName));
                 rows.Add(new Text(""));
+                rows.Add(CreatePanel(state, galleryName));
             }
+            rows.Add(new Text(""));
 
             return new Rows(rows);
         }
 
-        public static void Stop()
+        public async static Task StopAsync()
         {
-            lock (SyncLock)
-            {
-                _context = null;
-            }
+            StateChannel.Writer.TryComplete();
+            await Task.WhenAll(displayTask);
         }
 
         public static void DisplaySyncState(SyncState state)
         {
-            lock (SyncLock)
-            {
-                _context?.UpdateTarget(CreateDisplay(state));
-                _context?.Refresh();
-            }
+            StateChannel.Writer.TryWrite(state);
         }
 
         private static IRenderable CreatePanel(SyncState syncState, string galleryName)
         {
-            if (!syncState.Keys.Contains(galleryName))
+            if (!syncState.Galleries.Contains(galleryName))
             {
                 return new Panel(
                     new Rows(
@@ -67,25 +78,26 @@ namespace Tools.Display
                     ))
                     .Header($"[bold]Gallery: {Markup.Escape(galleryName)} [/]")
                     .Border(BoxBorder.Rounded);
+
+
             }
 
-            var galleryState = syncState[galleryName];
+            var galleryState = syncState.State[galleryName];
 
             var processed =
                 galleryState.CreatedAssets +
                 galleryState.SkippedAssets;
 
-            var total = galleryState.TotalFilesToProcess;
+            double percentage = 0;
+            if (galleryState.TotalFilesToProcess.HasValue)
+            {
+                int total = galleryState.TotalFilesToProcess.Value;
+                percentage = total > 0
+                    ? Math.Min(100, (double)processed / total)
+                    : 0;
+            }
 
-            var percentage = total > 0
-                ? Math.Min(100, (double)processed / total * 100)
-                : 0;
-
-            var progressBar = CreateProgressBar(processed, total);
-
-            var lastGroup = string.IsNullOrWhiteSpace(galleryState.LastGroup)
-                ? "-"
-                : galleryState.LastGroup;
+            var progressBar = CreateProgressBar(percentage);
 
             var lastAsset = string.IsNullOrWhiteSpace(galleryState.LastAsset)
                 ? "-"
@@ -98,34 +110,36 @@ namespace Tools.Display
                 .AddItem("Skipped", galleryState.SkippedAssets, Color.Yellow)
                 .AddItem("Deleted", galleryState.DeletedAssets, Color.Red);
 
+
+            var header = galleryState.ElapsedTime.HasValue
+                ? $"[bold] Gallery: {Markup.Escape(galleryName)} | Processing Time: {galleryState.ElapsedTime} [/]"
+                : $"[bold] Gallery: {Markup.Escape(galleryName)} [/]";
+
             return new Panel(
                 new Rows(
-                    new Markup(
-                        $"[bold]Group:[/] {Markup.Escape(lastGroup)}"),
-
                     new Markup(
                         $"[bold]Asset:[/] {Markup.Escape(lastAsset)}"),
 
                     new Text(""),
 
-                    new Markup(
-                        $"{processed:N0} / {total:N0} ({percentage:F1}%)"),
+                    new Markup(galleryState.TotalFilesToProcess.HasValue ? $"{processed:N0} / {galleryState.TotalFilesToProcess:N0} ({percentage * 100:F1}%)" : "???"),
 
                     progressBar,
 
                     new Text(""),
 
                     breakdown))
-                .Header($"[bold]Gallery: {Markup.Escape(galleryName)} [/]")
+            {
+                Width = Math.Max(Console.WindowWidth, 70)
+            }
+                .Header(header)
                 .Border(BoxBorder.Rounded);
+
         }
 
-        private static IRenderable CreateProgressBar(int processed, int total, int width = 60)
+        private static IRenderable CreateProgressBar(double percentage, int width = 60)
         {
-            var percentage = total > 0
-                ? Math.Clamp((double)processed / total, 0, 1)
-                : 0;
-
+            percentage = Math.Clamp(percentage, 0, 1);
             var filled = (int)Math.Round(width * percentage);
             var remaining = width - filled;
 

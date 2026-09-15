@@ -103,7 +103,7 @@ namespace App.Services
 
             entity = (await context.Assets.AddAsync(entity)).Entity;
 
-            logger.Info($"Asset {entity.Id} created", ApplicationArea.Service);
+            logger.Info($"Created asset for {assetFilePath}", ApplicationArea.Service);
             return entity.ToAssetDto();
         }
 
@@ -121,7 +121,7 @@ namespace App.Services
             return deleted > 0;
         }
 
-        public async Task<int> StageDeleteRangeAsync(IEnumerable<int> ids)
+        public async Task<int> DeleteRangeAsync(IEnumerable<int> ids)
         {
             ArgumentNullException.ThrowIfNull(ids);
             if (ids.Count() == 0)
@@ -138,7 +138,7 @@ namespace App.Services
             return deleted;
         }
 
-        public async Task<bool> Exists(int galleryId, string relativePath)
+        public async Task<bool> ExistsAsync(int galleryId, string relativePath)
         {
             return await context.Assets
                 .AnyAsync(x =>

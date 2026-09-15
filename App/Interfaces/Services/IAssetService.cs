@@ -12,8 +12,8 @@ namespace App.Interfaces.Services
         Task AddTags(AssetAddTagsCommand command);
         Task<AssetDto> StageCreateAssetAsync(AssetCreateCommand command);
         Task<bool> DeleteAsync(int id);
-        Task<int> StageDeleteRangeAsync(IEnumerable<int> ids);
-        Task<bool> Exists(int galleryId, string relativePath);
+        Task<int> DeleteRangeAsync(IEnumerable<int> ids);
+        Task<bool> ExistsAsync(int galleryId, string relativePath);
         Task<AssetGroupInfoDto?> GetAssetGroupInfo(AssetGroupInfoQuery query);
         Task<AssetTagsDto> GetAssetTags(AssetTagsQuery query);
         Task<AssetDto?> GetByPathAsync(int galleryId, string relativePath);
