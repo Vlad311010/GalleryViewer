@@ -89,6 +89,8 @@ namespace App.PreviewCreation
             WebpEncoder encoder = new WebpEncoder
             {
                 Quality = settings.Quality,
+                Method = WebpEncodingMethod.Level3,
+                FileFormat = WebpFileFormatType.Lossy
             };
 
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!); // make sure directorie exsist
