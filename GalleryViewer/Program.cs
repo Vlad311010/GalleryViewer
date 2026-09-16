@@ -1,7 +1,7 @@
 using App.Interfaces.Services;
 using App.Services;
 using App.Settings;
-using Data.Entities;
+using Data.Context;
 using GalleryViewer.ApiSchema;
 using GalleryViewer.Middlewares;
 using Microsoft.EntityFrameworkCore;

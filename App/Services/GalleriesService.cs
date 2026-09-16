@@ -4,6 +4,7 @@ using App.Models.Commands;
 using App.Models.Dtos.Gallery;
 using App.Models.Queries;
 using App.Validators;
+using Data.Context;
 using Data.Entities;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;

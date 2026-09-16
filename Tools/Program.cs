@@ -1,5 +1,5 @@
 ﻿using App.Settings;
-using Data.Entities;
+using Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serilog;

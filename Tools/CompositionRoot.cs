@@ -1,7 +1,7 @@
 ﻿using App.PreviewCreation;
 using App.Services;
 using App.Settings;
-using Data.Entities;
+using Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

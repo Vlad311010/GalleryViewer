@@ -1,6 +1,6 @@
 ﻿using App.PreviewCreation;
 using App.Services;
-using Data.Entities;
+using Data.Context;
 
 namespace Tools.Scopes
 {

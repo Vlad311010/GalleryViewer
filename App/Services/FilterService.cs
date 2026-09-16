@@ -5,6 +5,7 @@ using App.Models;
 using App.Models.Dtos.Filter;
 using App.Models.Queries;
 using App.Validators;
+using Data.Context;
 using Data.Entities;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;

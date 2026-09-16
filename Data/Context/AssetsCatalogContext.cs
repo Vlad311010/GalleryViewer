@@ -1,6 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
-namespace Data.Entities;
+namespace Data.Context;
 
 public partial class AssetsCatalogContext : DbContext
 {

@@ -5,6 +5,7 @@ using App.Interfaces.Services;
 using App.Models.Dtos.Media;
 using App.Models.Queries;
 using App.Validators;
+using Data.Context;
 using Data.Entities;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;

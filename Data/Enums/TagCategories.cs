@@ -1,4 +1,4 @@
-﻿namespace Core.Enums
+﻿namespace Data.Enums
 {
     public enum TagCategories
     {
