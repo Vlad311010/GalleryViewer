@@ -1,8 +1,6 @@
-﻿using App.Enums;
-using App.Exceptions;
+﻿using App.Exceptions;
 using App.Interfaces.Services;
 using App.Models.Commands;
-using App.Models.Dtos.Asset;
 using App.Models.Dtos.Group;
 using App.Models.Queries;
 using App.Validators;
@@ -64,7 +62,7 @@ namespace App.Services
         }
 
 
-        public bool IsSynchronized(AssetGroupSynchronizationQuery query, out List<AssetSynchronizationDto> outOfSyncFiles)
+        public bool IsSynchronized(AssetGroupSynchronizationQuery query, out string[] unstagedFiles)
         {
             ArgumentNullException.ThrowIfNull(query);
 
@@ -82,33 +80,12 @@ namespace App.Services
 
             var filePaths = query.Files.ToHashSet();
             var existingAssetPaths = groupAssets.Select(x => x.RelativePath).ToHashSet();
-            outOfSyncFiles =
-            [
-                .. filePaths
-                    .Except(existingAssetPaths)
-                    .Select(path => new AssetSynchronizationDto(
-                        SyncMismatchType.OnlyFileSystem,
-                        null,
-                        path)),
+            unstagedFiles = [.. filePaths.Except(existingAssetPaths)];
 
-                .. groupAssets
-                    .Where(x => !filePaths.Contains(x.RelativePath))
-                    .Select(x => new AssetSynchronizationDto(
-                        SyncMismatchType.OnlyDb,
-                        x.Id,
-                        x.RelativePath))
-            ];
-
-            return !outOfSyncFiles.Any();
+            return !unstagedFiles.Any();
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="groupId"></param>
-        /// <returns>Last position index</returns>
-        public async Task<int> StageNormalizePositionsAsync(AssetGroupQuery query)
+        public async Task StageNormalizePositionsAsync(AssetGroupQuery query)
         {
             ArgumentNullException.ThrowIfNull(query);
 
@@ -120,7 +97,11 @@ namespace App.Services
                 .SingleOrDefaultAsync();
 
             EntityNotFoundException<AssetGroup>.ThrowIfNull(group, query.GroupId);
-
+            int assetsCount = group.Assets.Count(asset => context.Entry(asset).State != EntityState.Deleted);
+            if (assetsCount == 0)
+            {
+                return;
+            }
 
             Asset[] assets = [.. group.Assets];
             Asset previewAsset = assets
@@ -135,7 +116,6 @@ namespace App.Services
             logger.Info("Group {id} asset positions normalized", ApplicationArea.Service, group.Id);
 
             group.CoverAssetIdx = previewAsset.GroupPosition!.Value;
-            return assets.Length;
         }
 
         public async Task SetPositionsAsync(SetAssetsPositionsCommand command)
@@ -245,6 +225,13 @@ namespace App.Services
                 positions
             );
         }
+
+        public async Task DeleteAsync(GroupDeleteCommand query)
+        {
+            await context.AssetGroups.Where(x => x.Id == query.Id).ExecuteDeleteAsync();
+            logger.Info("Group {id} deleted", ApplicationArea.Service, query.Id);
+        }
+
 
         private static IEnumerable<AssetPosition> Normalize(IEnumerable<AssetPosition> positions)
         {

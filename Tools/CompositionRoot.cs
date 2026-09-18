@@ -82,6 +82,7 @@ namespace Tools
                 ConstructGalleriesService(context),
                 ConstructGroupsService(context),
                 ConstructAssetsService(context),
+                mediaAccessorService,
                 ConstructPersistenceService(context)
             );
         }

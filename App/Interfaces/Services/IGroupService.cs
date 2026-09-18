@@ -1,5 +1,4 @@
 ﻿using App.Models.Commands;
-using App.Models.Dtos.Asset;
 using App.Models.Dtos.Group;
 using App.Models.Queries;
 
@@ -11,9 +10,10 @@ namespace App.Interfaces.Services
         Task<AssetGroupDto> CreateGroup(CreateAssetGroupCommand command);
         Task<AssetGroupDtoWithAssetPositions> GetByIdAsync(AssetGroupQuery query);
         Task<AssetGroupDto?> GetPhysicalGroup(PhysicalAssetGroupQuery query);
-        bool IsSynchronized(AssetGroupSynchronizationQuery query, out List<AssetSynchronizationDto> outOfSyncFiles);
-        Task<int> StageNormalizePositionsAsync(AssetGroupQuery query);
+        bool IsSynchronized(AssetGroupSynchronizationQuery query, out string[] unstagedFiles);
+        Task StageNormalizePositionsAsync(AssetGroupQuery query);
         Task SetCover(SetGroupCoverCommand command);
         Task SetPositionsAsync(SetAssetsPositionsCommand command);
+        Task DeleteAsync(GroupDeleteCommand query);
     }
 }

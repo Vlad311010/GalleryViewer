@@ -104,39 +104,15 @@ namespace App.Services
 
             entity = (await context.Assets.AddAsync(entity)).Entity;
 
-            logger.Info($"Created asset for {assetFilePath}", ApplicationArea.Service);
+            logger.Info("Created asset for {assetFilePath}", ApplicationArea.Service, assetFilePath);
             return entity.ToAssetDto();
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public void StageDelete(AssetDeleteCommand command)
         {
-            int deleted = await context.Assets
-                .Where(x => x.Id == id)
-                .ExecuteDeleteAsync();
-
-            if (deleted > 0)
-            {
-                logger.Info("Asset {id} deleted", ApplicationArea.Service, id);
-            }
-
-            return deleted > 0;
-        }
-
-        public async Task<int> DeleteRangeAsync(IEnumerable<int> ids)
-        {
-            ArgumentNullException.ThrowIfNull(ids);
-            if (ids.Count() == 0)
-            {
-                return 0;
-            }
-
-            int deleted = await context.Assets
-                .Where(x => ids.Contains(x.Id))
-                .ExecuteDeleteAsync();
-
-            logger.Info("Asset {ids} deleted", ApplicationArea.Service, string.Join(',', ids));
-
-            return deleted;
+            Asset asset = new Asset { Id = command.Id };
+            context.Assets.Remove(asset);
+            logger.Info("Asset {AssetId} deleted", ApplicationArea.Service, command.Id);
         }
 
         public async Task<bool> ExistsAsync(int galleryId, string relativePath)
@@ -262,6 +238,35 @@ namespace App.Services
                 command.AssetId);
 
             await context.SaveChangesAsync();
+        }
+
+        public async IAsyncEnumerable<IReadOnlyList<AssetFileInfoDto>> GetAssetsInBatchesAsync(int batchSize, DateTime timeStamp)
+        {
+            int previousBatchLastId = -1;
+            while (true)
+            {
+                var batch = await context.Assets
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.ImportTime < timeStamp
+                        && x.Id > previousBatchLastId
+                    )
+                    .OrderBy(x => x.Id)
+                    .Take(batchSize)
+                    .Select(x => new AssetFileInfoDto(
+                        x.Id,
+                        x.RelativePath,
+                        x.GroupId))
+                    .ToArrayAsync();
+
+                if (batch.Length == 0)
+                {
+                    yield break;
+                }
+                previousBatchLastId = batch[^1].Id;
+                yield return batch;
+            }
+
         }
     }
 }

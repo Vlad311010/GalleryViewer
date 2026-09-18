@@ -5,9 +5,10 @@ namespace Tools.Scopes
 {
     internal sealed class GallerySyncScope : DbContextScope<AssetsCatalogContext>
     {
-        public AssetsService Assets { get; }
-        public GroupsService Groups { get; }
         public GalleriesService Galleries { get; }
+        public GroupsService Groups { get; }
+        public AssetsService Assets { get; }
+        public FileSystemMediaAccessorService MediaAccessor { get; }
         public PersistenceService Persistence { get; }
 
         public GallerySyncScope(
@@ -15,11 +16,13 @@ namespace Tools.Scopes
             GalleriesService galleries,
             GroupsService groups,
             AssetsService assets,
+            FileSystemMediaAccessorService mediaAccessor,
             PersistenceService persistence) : base(context)
         {
-            Assets = assets;
-            Groups = groups;
             Galleries = galleries;
+            Groups = groups;
+            Assets = assets;
+            MediaAccessor = mediaAccessor;
             Persistence = persistence;
         }
     }

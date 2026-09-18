@@ -64,35 +64,35 @@ namespace Tools.Sync
                     SyncEventType.AssetCreated =>
                         data with
                         {
-                            CreatedAssets = data.CreatedAssets + e.updateValue,
+                            CreatedAssets = data.CreatedAssets + e.UpdateValue,
                             LastAsset = e.Asset
                         },
 
                     SyncEventType.AssetSkipped =>
                         data with
                         {
-                            SkippedAssets = data.SkippedAssets + e.updateValue,
+                            SkippedAssets = data.SkippedAssets + e.UpdateValue,
                             LastAsset = e.Asset
                         },
 
                     SyncEventType.AssetDeleted =>
                         data with
                         {
-                            DeletedAssets = data.DeletedAssets + e.updateValue,
+                            DeletedAssets = data.DeletedAssets + e.UpdateValue,
                             LastAsset = e.Asset
                         },
 
                     SyncEventType.GroupCreated =>
                         data with
                         {
-                            CreatedGroups = data.CreatedGroups + e.updateValue,
+                            CreatedGroups = data.CreatedGroups + e.UpdateValue,
                             LastAsset = e.Asset ?? data.LastAsset
                         },
 
                     SyncEventType.GroupSyncSkipped =>
                         data with
                         {
-                            SkippedAssets = data.SkippedAssets + e.updateValue,
+                            SkippedAssets = data.SkippedAssets + e.UpdateValue,
                             LastAsset = e.Asset
                         },
 
@@ -102,13 +102,14 @@ namespace Tools.Sync
                 galleries[e.GalleryName] = data;
             }
 
+
             if (e.Type == SyncEventType.GalleryProcessingStarted)
             {
                 galleryStartTimestamps[e.GalleryName] = Stopwatch.GetTimestamp();
             }
             else if (e.Type == SyncEventType.GalleryProcessingFinished)
             {
-                galleriesSynchronized += e.updateValue;
+                galleriesSynchronized += e.UpdateValue;
             }
 
             return StateSnapshot();

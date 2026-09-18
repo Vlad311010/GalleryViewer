@@ -4,6 +4,6 @@
         SyncEventType Type,
         string GalleryName,
         string? Asset = null,
-        int updateValue = 1
+        int UpdateValue = 1
     );
 }

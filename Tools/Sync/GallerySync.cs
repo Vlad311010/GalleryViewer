@@ -1,5 +1,4 @@
 ﻿using App.Commands;
-using App.Enums;
 using App.Models.Commands;
 using App.Models.Dtos.Asset;
 using App.Models.Dtos.Gallery;
@@ -129,7 +128,12 @@ namespace Tools.Sync
                     gallery.Id
                 );
 
+
+                DateTime syncrotizationStartTimeStamp = DateTime.UtcNow;
                 await SyncGalleryAsync(gallery, files);
+                IReadOnlyCollection<int> modifiedGroups = await RemoveMissingAssetsFromDatabaseAsync(gallery, syncrotizationStartTimeStamp, syncScope);
+                await GroupsCleanupAsync(modifiedGroups);
+                await syncScope.Persistence.SaveChangesAsync();
 
                 ProgressUpdate(new SyncEvent(
                     SyncEventType.GalleryProcessingFinished,
@@ -161,6 +165,7 @@ namespace Tools.Sync
                     stateTracker[gallery.Name].CreatedGroups);
             }
         }
+
 
         private async void UpdateGalleryThumbnailAsync(int galleryId, int? currentThumbnailAssetId, string? thumbnailFile)
         {
@@ -209,10 +214,16 @@ namespace Tools.Sync
                         await QueueAssetsAsync(gallery, group.Id, filesGroup.Files, channel.Writer);
 
                     }
-                    else if (!syncScope.Groups.IsSynchronized(new AssetGroupSynchronizationQuery(group.Id, filesGroup.Files), out List<AssetSynchronizationDto> outOfSyncAsset)) // out of sync
+                    else if (!syncScope.Groups.IsSynchronized(new AssetGroupSynchronizationQuery(group.Id, filesGroup.Files), out string[] outOfSyncAsset))
                     {
-                        AssetSyncData[] assetsToProcess = await SyncGroupAsync(gallery, group, outOfSyncAsset);
-                        await QueueAssetsAsync(assetsToProcess, channel.Writer);
+                        logger.Info(
+                            "Group {GroupId} synchronization detected changes: {AssetsToAdd} assets to add", ApplicationArea.Tools,
+                            group.Id,
+                            outOfSyncAsset.Count()
+                        );
+
+                        int groupPositionOffset = await syncScope.Groups.AssetsCountAsync(new(group.Id));
+                        await QueueAssetsAsync(gallery, group.Id, outOfSyncAsset, channel.Writer, groupPositionOffset);
                     }
                     else // fine and up to date 
                     {
@@ -243,7 +254,7 @@ namespace Tools.Sync
             await syncScope.Persistence.SaveChangesAsync();
         }
 
-        private static async Task QueueAssetsAsync(GalleryDto gallery, int? groupId, string[] files, ChannelWriter<AssetSyncData> channelWriter)
+        private static async Task QueueAssetsAsync(GalleryDto gallery, int? groupId, string[] files, ChannelWriter<AssetSyncData> channelWriter, int positionOffset = 0)
         {
             for (int position = 0; position < files.Length; position++)
             {
@@ -253,15 +264,7 @@ namespace Tools.Sync
                     groupId,
                     gallery.Path,
                     files[position],
-                    groupId.HasValue ? position : 0));
-            }
-        }
-
-        private static async Task QueueAssetsAsync(IEnumerable<AssetSyncData> assetSyncData, ChannelWriter<AssetSyncData> channelWriter)
-        {
-            foreach (var assetData in assetSyncData)
-            {
-                await channelWriter.WriteAsync(assetData);
+                    groupId.HasValue ? position + positionOffset : 0));
             }
         }
 
@@ -280,64 +283,6 @@ namespace Tools.Sync
             );
 
             return group;
-        }
-
-        private async Task<AssetSyncData[]> SyncGroupAsync(GalleryDto gallery, AssetGroupDto group, List<AssetSynchronizationDto> outOfSyncAsset)
-        {
-            List<int> assetIdsToDelete = new List<int>();
-            List<string> missingAssetPaths = new List<string>();
-
-            foreach (var asset in outOfSyncAsset)
-            {
-                if (asset.Type == SyncMismatchType.OnlyDb) // files were removed from file system
-                {
-                    assetIdsToDelete.Add(asset.id!.Value);
-                }
-                else if (asset.Type == SyncMismatchType.OnlyFileSystem) // new files added inside folder in file system
-                {
-                    missingAssetPaths.Add(asset.RelativePath);
-                }
-            }
-
-            logger.Info(
-                "Group {GroupId} synchronization detected changes: {AssetsToRemove} assets to remove, {AssetsToAdd} assets to add", ApplicationArea.Tools,
-                group.Id,
-                assetIdsToDelete.Count,
-                missingAssetPaths.Count
-            );
-
-            // delete
-            int deleted = await syncScope.Assets.DeleteRangeAsync(assetIdsToDelete);
-
-            ProgressUpdate(new SyncEvent(
-                SyncEventType.AssetDeleted,
-                gallery.Name,
-                null,
-                updateValue: deleted)
-            );
-
-            // normalize group positions
-            int groupPositionOffset;
-            if (deleted > 0)
-            {
-                groupPositionOffset = 1 + await syncScope.Groups.StageNormalizePositionsAsync(new(group!.Id));
-            }
-            else
-            {
-                groupPositionOffset = await syncScope.Groups.AssetsCountAsync(new(group!.Id));
-            }
-
-            return missingAssetPaths
-               .Select((file, i) => new AssetSyncData
-               (
-                   gallery.Name,
-                   gallery.Id,
-                   group.Id,
-                   gallery.Path,
-                   file,
-                   i + groupPositionOffset
-               ))
-               .ToArray();
         }
 
         private async Task RunAssetWorkerAsync(ChannelReader<AssetSyncData> reader, int workerId)
@@ -395,6 +340,53 @@ namespace Tools.Sync
             );
         }
 
+        private async Task<IReadOnlyCollection<int>> RemoveMissingAssetsFromDatabaseAsync(GalleryDto gallery, DateTime syncrotizationStartTimeStamp, GallerySyncScope scope)
+        {
+            const int batchSize = 400;
+
+            HashSet<int> modifiedGroups = new HashSet<int>();
+            await foreach (var assetsBatch in scope.Assets.GetAssetsInBatchesAsync(batchSize, syncrotizationStartTimeStamp))
+            {
+                foreach (AssetFileInfoDto assetInfo in assetsBatch)
+                {
+                    if (!scope.MediaAccessor.Exists(Path.Combine(gallery.Path, assetInfo.AssetRelativePath)))
+                    {
+                        scope.Assets.StageDelete(new(assetInfo.Id));
+
+                        ProgressUpdate(new SyncEvent(
+                            SyncEventType.AssetDeleted,
+                            gallery.Name,
+                            assetInfo.AssetRelativePath)
+                        );
+
+                        if (assetInfo.GroupId.HasValue)
+                        {
+                            modifiedGroups.Add(assetInfo.GroupId.Value);
+                        }
+                    }
+                }
+            }
+
+            return modifiedGroups;
+        }
+
+        private async Task GroupsCleanupAsync(IEnumerable<int> ids)
+        {
+            foreach (int id in ids)
+            {
+                await syncScope.Groups.StageNormalizePositionsAsync(new AssetGroupQuery(id));
+            }
+
+            await syncScope.Persistence.SaveChangesAsync();
+
+            foreach (int id in ids)
+            {
+                if (await syncScope.Groups.AssetsCountAsync(new(id)) == 0)
+                {
+                    await syncScope.Groups.DeleteAsync(new(id));
+                }
+            }
+        }
 
         private static bool IsMatchesWithConfig(GalleryDto gallery, GaleryData galleryConfigData)
         {
@@ -430,5 +422,6 @@ namespace Tools.Sync
             string AssetRelativePath,
             int Position
         );
+
     }
 }

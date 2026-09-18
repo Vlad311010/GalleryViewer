@@ -7,8 +7,7 @@ namespace App.Validators
     {
         public SetAssetsPositionsCommandValidator()
         {
-            RuleFor(x => x.GroupId)
-                .GreaterThan(0);
+            RuleFor(x => x.GroupId).EntityId();
 
             RuleForEach(x => x.Positions)
                 .ChildRules(item =>
@@ -17,7 +16,7 @@ namespace App.Validators
                         .EntityId();
 
                     item.RuleFor(x => x.Position)
-                        .GreaterThan(0);
+                        .GreaterThanOrEqualTo(0);
                 });
 
             RuleFor(x => x.Positions)
