@@ -20,7 +20,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace App.Services
 {
-    public class AssetsService(AssetsCatalogContext context, IMediaAccessorService mediaAccessorService, ILogger<AssetsService> logger) : IAssetService
+    public class AssetsService(AssetsCatalogContext context, IMediaAccessorService mediaAccessorService, ILogger<AssetsService> logger) : IAssetsService
     {
         public bool TryGetByHash(string md5Hash, [NotNullWhen(true)] out AssetDto assetDto)
         {
@@ -110,8 +110,9 @@ namespace App.Services
 
         public void StageDelete(AssetDeleteCommand command)
         {
-            Asset asset = new Asset { Id = command.Id };
+            Asset asset = context.Assets.Local.SingleOrDefault(x => x.Id == command.Id) ?? new Asset { Id = command.Id };
             context.Assets.Remove(asset);
+
             logger.Info("Asset {AssetId} deleted", ApplicationArea.Service, command.Id);
         }
 
@@ -240,7 +241,7 @@ namespace App.Services
             await context.SaveChangesAsync();
         }
 
-        public async IAsyncEnumerable<IReadOnlyList<AssetFileInfoDto>> GetAssetsInBatchesAsync(int batchSize, DateTime timeStamp)
+        public async IAsyncEnumerable<IReadOnlyList<AssetFileInfoDto>> GetAssetsInBatchesAsync(int galleryId, DateTime timeStamp, int batchSize)
         {
             int previousBatchLastId = -1;
             while (true)
@@ -248,8 +249,9 @@ namespace App.Services
                 var batch = await context.Assets
                     .AsNoTracking()
                     .Where(x =>
-                        x.ImportTime < timeStamp
+                        x.GalleryId == galleryId
                         && x.Id > previousBatchLastId
+                        && x.ImportTime < timeStamp
                     )
                     .OrderBy(x => x.Id)
                     .Take(batchSize)

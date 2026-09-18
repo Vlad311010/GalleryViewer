@@ -1,11 +1,10 @@
 ﻿using App.Commands;
+using App.Interfaces.Services;
 using App.Models.Commands;
 using App.Models.Dtos.Asset;
 using App.Models.Dtos.Gallery;
 using App.Models.Dtos.Group;
 using App.Models.Queries;
-using App.PreviewCreation;
-using App.Services;
 using Microsoft.Extensions.Logging;
 using Shared.Enums;
 using Shared.Extensions;
@@ -69,6 +68,7 @@ namespace Tools.Sync
                 syncData.Galeries.Count()
             );
 
+            DateTime syncrotizationStartTimeStamp = DateTime.UtcNow;
             foreach (var galleryConfigData in syncData.Galeries)
             {
                 (IEnumerable<FilesGroup> files, int filesCount) = FileDiscovery.Discover(galleryConfigData.Path);
@@ -80,7 +80,9 @@ namespace Tools.Sync
                         galleryConfigData.Path
                     );
 
+                    continue;
                 }
+
                 stateTracker.UpdateGalleriesFilesCount(galleryConfigData.Name, filesCount);
                 ProgressUpdate(new SyncEvent(
                     SyncEventType.GalleryProcessingStarted,
@@ -128,8 +130,6 @@ namespace Tools.Sync
                     gallery.Id
                 );
 
-
-                DateTime syncrotizationStartTimeStamp = DateTime.UtcNow;
                 await SyncGalleryAsync(gallery, files);
                 IReadOnlyCollection<int> modifiedGroups = await RemoveMissingAssetsFromDatabaseAsync(gallery, syncrotizationStartTimeStamp, syncScope);
                 await GroupsCleanupAsync(modifiedGroups);
@@ -149,6 +149,7 @@ namespace Tools.Sync
                 }
 
                 UpdateGalleryThumbnailAsync(gallery.Id, gallery.CoverAssetId, thumbnailFile);
+                await syncScope.Persistence.SaveChangesAsync();
 
                 logger.Info(
                     "Gallery synchronization completed for {GalleryName}. " +
@@ -182,7 +183,7 @@ namespace Tools.Sync
                     return;
                 }
 
-                if (currentThumbnailAssetId.HasValue && thumbnailAsset.Id != currentThumbnailAssetId.Value)
+                if (!currentThumbnailAssetId.HasValue || thumbnailAsset.Id != currentThumbnailAssetId.Value)
                 {
                     await syncScope.Galleries.StageUpdatePreviewAssetAsync(galleryId, thumbnailAsset.Id);
                 }
@@ -225,7 +226,7 @@ namespace Tools.Sync
                         int groupPositionOffset = await syncScope.Groups.AssetsCountAsync(new(group.Id));
                         await QueueAssetsAsync(gallery, group.Id, outOfSyncAsset, channel.Writer, groupPositionOffset);
                     }
-                    else // fine and up to date 
+                    else
                     {
                         ProgressUpdate(new SyncEvent(
                             SyncEventType.GroupSyncSkipped,
@@ -302,7 +303,7 @@ namespace Tools.Sync
             await scope.Persistence.SaveChangesAsync();
         }
 
-        private async Task ProcessAssetAsync(AssetSyncData assetSyncData, AssetsService assetsService, PreviewCreationService previewCreator, PersistenceService persistenceService)
+        private async Task ProcessAssetAsync(AssetSyncData assetSyncData, IAssetsService assetsService, IPreviewCreationService previewCreator, IPersistenceService persistenceService)
         {
             if (await assetsService.ExistsAsync(assetSyncData.GalleryId, assetSyncData.AssetRelativePath))
             {
@@ -345,7 +346,7 @@ namespace Tools.Sync
             const int batchSize = 400;
 
             HashSet<int> modifiedGroups = new HashSet<int>();
-            await foreach (var assetsBatch in scope.Assets.GetAssetsInBatchesAsync(batchSize, syncrotizationStartTimeStamp))
+            await foreach (var assetsBatch in scope.Assets.GetAssetsInBatchesAsync(gallery.Id, syncrotizationStartTimeStamp, batchSize))
             {
                 foreach (AssetFileInfoDto assetInfo in assetsBatch)
                 {

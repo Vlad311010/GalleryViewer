@@ -4,7 +4,7 @@ using App.Models.Queries;
 
 namespace App.Interfaces.Services
 {
-    public interface IGroupService
+    public interface IGroupsService
     {
         Task<int> AssetsCountAsync(AssetGroupQuery query);
         Task<AssetGroupDto> CreateGroup(CreateAssetGroupCommand command);

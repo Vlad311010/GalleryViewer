@@ -15,7 +15,7 @@ using Shared.Models;
 
 namespace App.Services
 {
-    public class GroupsService(AssetsCatalogContext context, ILogger<GroupsService> logger) : IGroupService
+    public class GroupsService(AssetsCatalogContext context, ILogger<GroupsService> logger) : IGroupsService
     {
         public async Task<AssetGroupDto> CreateGroup(CreateAssetGroupCommand command)
         {

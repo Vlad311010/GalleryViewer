@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class GroupsController(IGroupService groupsService) : BaseController
+    public class GroupsController(IGroupsService groupsService) : BaseController
     {
         [HttpGet("{id}")]
         [EndpointName("groupDetails")]

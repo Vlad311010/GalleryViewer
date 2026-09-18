@@ -1,15 +1,16 @@
-﻿using App.Services;
+﻿using App.Interfaces.Services;
+using App.Services;
 using Data.Context;
 
 namespace Tools.Scopes
 {
     internal sealed class GallerySyncScope : DbContextScope<AssetsCatalogContext>
     {
-        public GalleriesService Galleries { get; }
-        public GroupsService Groups { get; }
-        public AssetsService Assets { get; }
-        public FileSystemMediaAccessorService MediaAccessor { get; }
-        public PersistenceService Persistence { get; }
+        public IGalleriesService Galleries { get; }
+        public IGroupsService Groups { get; }
+        public IAssetsService Assets { get; }
+        public IMediaAccessorService MediaAccessor { get; }
+        public IPersistenceService Persistence { get; }
 
         public GallerySyncScope(
             AssetsCatalogContext context,

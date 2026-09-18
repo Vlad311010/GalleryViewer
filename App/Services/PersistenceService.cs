@@ -1,8 +1,9 @@
-﻿using Data.Context;
+﻿using App.Interfaces.Services;
+using Data.Context;
 
 namespace App.Services
 {
-    public class PersistenceService
+    public class PersistenceService : IPersistenceService
     {
         protected readonly AssetsCatalogContext context;
 

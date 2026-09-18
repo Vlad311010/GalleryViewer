@@ -1,4 +1,5 @@
-﻿using App.PreviewCreation;
+﻿using App.Interfaces.Services;
+using App.PreviewCreation;
 using App.Services;
 using Data.Context;
 
@@ -6,11 +7,11 @@ namespace Tools.Scopes
 {
     internal sealed class WorkerScope : DbContextScope<AssetsCatalogContext>
     {
-        public AssetsService Assets { get; }
-        public GroupsService Groups { get; }
-        public GalleriesService Galleries { get; }
-        public PreviewCreationService Preview { get; }
-        public PersistenceService Persistence { get; }
+        public IAssetsService Assets { get; }
+        public IGroupsService Groups { get; }
+        public IGalleriesService Galleries { get; }
+        public IPreviewCreationService Preview { get; }
+        public IPersistenceService Persistence { get; }
 
         public WorkerScope(
             AssetsCatalogContext context,

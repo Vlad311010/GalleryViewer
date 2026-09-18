@@ -50,12 +50,12 @@ builder.Services.AddDbContext<AssetsCatalogContext>(options =>
         builder.Configuration.GetConnectionString("GalleryViewer")));
 
 // Services
-builder.Services.AddTransient<IAssetService, AssetsService>();
+builder.Services.AddTransient<IAssetsService, AssetsService>();
 builder.Services.AddTransient<IAssetsFilterService, FilterService>();
 builder.Services.AddTransient<IMediaService, MediaService>();
 builder.Services.AddTransient<ITagsService, TagsServices>();
 builder.Services.AddTransient<IGalleriesService, GalleriesService>();
-builder.Services.AddTransient<IGroupService, GroupsService>();
+builder.Services.AddTransient<IGroupsService, GroupsService>();
 builder.Services.AddTransient<IMediaAccessorService, FileSystemMediaAccessorService>();
 
 

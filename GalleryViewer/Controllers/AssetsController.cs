@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GalleryViewer.Controllers
 {
     [Produces("application/json")]
-    public class AssetsController(IAssetService assetsService) : BaseController
+    public class AssetsController(IAssetsService assetsService) : BaseController
     {
         [HttpGet("{assetId}")]
         [EndpointName("groupAssetInfo")]

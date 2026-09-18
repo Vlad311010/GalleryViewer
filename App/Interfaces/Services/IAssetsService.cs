@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace App.Interfaces.Services
 {
-    public interface IAssetService
+    public interface IAssetsService
     {
         Task AddTags(AssetAddTagsCommand command);
         Task<AssetDto> StageCreateAssetAsync(AssetCreateCommand command);
@@ -18,6 +18,6 @@ namespace App.Interfaces.Services
         Task<AssetDto?> GetByPathAsync(int galleryId, string relativePath);
         Task RemoveTag(AssetRemoveTagCommand command);
         bool TryGetByHash(string md5Hash, [NotNullWhen(true)] out AssetDto assetDto);
-        IAsyncEnumerable<IReadOnlyList<AssetFileInfoDto>> GetAssetsInBatchesAsync(int batchSize, DateTime timeStamp);
+        IAsyncEnumerable<IReadOnlyList<AssetFileInfoDto>> GetAssetsInBatchesAsync(int galleryId, DateTime timeStamp, int batchSize);
     }
 }
