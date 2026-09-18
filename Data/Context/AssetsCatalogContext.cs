@@ -30,7 +30,7 @@ public partial class AssetsCatalogContext : DbContext
     {
         modelBuilder.Entity<Asset>(entity =>
         {
-            entity.ToTable("Asset");
+            entity.ToTable("Assets");
 
             entity.HasIndex(e => new { e.GalleryId, e.RelativePath }, "Asset_GalleryId_IDX");
 
