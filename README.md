@@ -141,11 +141,16 @@ Example configuration:
 
 The synchronization process scans the configured directories and updates the database to reflect the existing media files.
 
-## 🔗 Frontend
+## Frontend
 
 Frontend repository:
 
 **https://github.com/Vlad311010/GalleryViewer-Frontend.git**
 
 The frontend is maintained as a separate project and consumes the GalleryViewer REST API through the generated OpenAPI client.
+
+
+## Database schema
+
+![image](Images/db_schema.png)
 
