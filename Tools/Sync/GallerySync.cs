@@ -265,7 +265,7 @@ namespace Tools.Sync
                     groupId,
                     gallery.Path,
                     files[position],
-                    groupId.HasValue ? position + positionOffset : 0));
+                    groupId.HasValue ? position + positionOffset : null));
             }
         }
 
@@ -421,7 +421,7 @@ namespace Tools.Sync
             int? GroupId,
             string GalleryPath,
             string AssetRelativePath,
-            int Position
+            int? Position
         );
 
     }
