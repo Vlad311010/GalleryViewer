@@ -11,10 +11,12 @@ namespace App.Validators
                 .EntityId();
 
             RuleFor(x => x.RelativePath)
+                .NotEmpty()
                 .RelativePath();
 
             RuleFor(x => x.PreviewPath)
-                .AbsolutePath();
+                .AbsolutePath()
+                .When(x => string.IsNullOrEmpty(x.PreviewPath));
 
             RuleFor(x => x.GroupId)
                 .EntityId();

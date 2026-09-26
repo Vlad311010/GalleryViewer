@@ -11,7 +11,8 @@ namespace App.Validators
 
             RuleFor(x => x.GroupName).NotEmpty();
 
-            RuleFor(x => x.PhysicalPath).NotEmpty().RelativePath();
+            RuleFor(x => x.PhysicalPath).RelativePath()
+                .When(x => !string.IsNullOrEmpty(x.PhysicalPath));
 
             RuleFor(x => x.CreationTimeOverride).NotEmpty();
         }

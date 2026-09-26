@@ -18,14 +18,14 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetGroupPosition([FromRoute] int assetId)
         {
-            AssetGroupInfoDto? assetGroupInfo = await assetsService.GetAssetGroupInfo(new(assetId));
+            AssetGroupInfoDto? assetGroupInfo = await assetsService.GetAssetGroupInfoAsync(new(assetId));
             if (assetGroupInfo == null)
             {
                 return ProblemDetailsBuilder.NotFoundProblem("Asset not found").AsObjectResult();
             }
 
-            int? prevAssetId = assetGroupInfo.GroupId.HasValue ? assetGroupInfo.groupAssets.GetItemCircularly(assetGroupInfo.GroupPosition!.Value - 1) : null;
-            int? nextAssetId = assetGroupInfo.GroupId.HasValue ? assetGroupInfo.groupAssets.GetItemCircularly(assetGroupInfo.GroupPosition!.Value + 1) : null;
+            int? prevAssetId = assetGroupInfo.GroupId.HasValue ? assetGroupInfo.GroupAssets.GetItemCircularly(assetGroupInfo.GroupPosition!.Value - 1) : null;
+            int? nextAssetId = assetGroupInfo.GroupId.HasValue ? assetGroupInfo.GroupAssets.GetItemCircularly(assetGroupInfo.GroupPosition!.Value + 1) : null;
             return Ok(new AssetGroupPositionResponseModel(
                 assetGroupInfo.AssetId,
                 assetGroupInfo.GroupId.HasValue,
@@ -42,7 +42,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetTags([FromRoute] int assetId)
         {
-            AssetTagsDto tags = await assetsService.GetAssetTags(new(assetId));
+            AssetTagsDto tags = await assetsService.GetAssetTagsAsync(new(assetId));
 
             return Ok(new AssetTagsResponseModel(tags.Tags));
         }
@@ -55,7 +55,7 @@ namespace GalleryViewer.Controllers
         public async Task<IActionResult> AddTags([FromRoute] int assetId, [FromBody] IEnumerable<string> tags)
         {
             AssetAddTagsCommand command = new(assetId, [.. tags.Select(x => x.NormalizeTag())]);
-            await assetsService.AddTags(command);
+            await assetsService.AddTagsAsync(command);
 
             return NoContent();
         }
@@ -67,7 +67,7 @@ namespace GalleryViewer.Controllers
         public async Task<IActionResult> RemoveTag([FromRoute] int assetId, [FromRoute] string tag)
         {
             AssetRemoveTagCommand command = new(assetId, tag.NormalizeTag());
-            await assetsService.RemoveTag(command);
+            await assetsService.RemoveTagAsync(command);
 
             return NoContent();
         }

@@ -2,7 +2,7 @@
 
 namespace App.Models.Dtos.Media
 {
-    public record MediaQuery(
+    public record PreviewQuery(
         DisplayItemType ItemType,
         int ItemId
     );

@@ -38,7 +38,7 @@ namespace App.Services
             );
         }
 
-        public async Task<string> GetAssetMimeType(AssetQuery query)
+        public async Task<string> GetAssetMimeTypeAsync(AssetQuery query)
         {
             ArgumentNullException.ThrowIfNull(query);
 
@@ -50,11 +50,11 @@ namespace App.Services
             return asset.MimeType;
         }
 
-        public async Task<MediaDto> GetPreviewAsync(MediaQuery query)
+        public async Task<MediaDto> GetPreviewAsync(PreviewQuery query)
         {
             ArgumentNullException.ThrowIfNull(query);
 
-            await new MediaQueryValidator().ValidateAndThrowAsync(query);
+            await new PreviewQueryValidator().ValidateAndThrowAsync(query);
 
             string? previeFilePath = null;
             switch (query.ItemType)
@@ -67,13 +67,13 @@ namespace App.Services
                     break;
             }
 
-            if (previeFilePath == null || !mediaAccessorService.Exists(previeFilePath))
+            if (!mediaAccessorService.Exists(previeFilePath))
             {
                 throw new MediaNotFoundException($"Preview file for {query.ItemType} {query.ItemId} not found.", previeFilePath);
             }
 
             return new MediaDto(
-                new FileStream(previeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read),
+                mediaAccessorService.GetMediaData(previeFilePath),
                 previeFilePath.ToMimeType()
             );
         }
@@ -84,24 +84,23 @@ namespace App.Services
             Asset? asset = await context.Assets.FindAsync(id);
             EntityNotFoundException<Asset>.ThrowIfNull(asset, id);
 
-            return asset.PreviewPath;
+            return asset?.PreviewPath;
         }
 
         private async Task<string?> GetGroupPreviewPathAsync(int id)
         {
-            string? previewPath = await context.AssetGroups
-                .Where(g => g.Id == id)
-                .Select(g =>
-                    g.Assets
-                        .Where(a => a.GroupPosition == g.CoverAssetIdx)
-                        .Select(a =>
-                            a.PreviewPath
-                        )
-                        .Single()
-                )
+            AssetGroup? group = await context.AssetGroups.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id);
+            EntityNotFoundException<AssetGroup>.ThrowIfNull(group, id);
+
+            Asset? asset = await context.Assets
+                .Where(a =>
+                    a.GroupId == id &&
+                    a.GroupPosition == group.CoverAssetIdx)
                 .SingleOrDefaultAsync();
 
-            return previewPath;
+            EntityNotFoundException<Asset>.ThrowIfNull(asset, string.Empty);
+
+            return asset.PreviewPath;
         }
     }
 }

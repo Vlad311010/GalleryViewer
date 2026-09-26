@@ -29,6 +29,4 @@ namespace App.Services
             return File.GetLastWriteTimeUtc(assetDataRef);
         }
     }
-
-
 }

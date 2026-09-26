@@ -1,6 +1,4 @@
-﻿using App.Models.Dtos;
-
-namespace App.Models.Dtos.Asset
+﻿namespace App.Models.Dtos.Asset
 {
     public record AssetDto(
         int Id,

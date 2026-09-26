@@ -29,7 +29,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAssetPreview([FromRoute] int id)
         {
-            var query = new MediaQuery(DisplayItemType.Asset, id);
+            var query = new PreviewQuery(DisplayItemType.Asset, id);
             var response = await mediaService.GetPreviewAsync(query);
 
             return File(response.MediaStream, response.MimeType, true);
@@ -42,7 +42,7 @@ namespace GalleryViewer.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetGroupPreview([FromRoute] int id)
         {
-            var query = new MediaQuery(DisplayItemType.Group, id);
+            var query = new PreviewQuery(DisplayItemType.Group, id);
             var response = await mediaService.GetPreviewAsync(query);
 
             return File(response.MediaStream, response.MimeType, true);
@@ -56,7 +56,7 @@ namespace GalleryViewer.Controllers
         public async Task<IActionResult> GetMimeType([FromRoute] int id)
         {
             var query = new AssetQuery(id);
-            var mimeType = await mediaService.GetAssetMimeType(query);
+            var mimeType = await mediaService.GetAssetMimeTypeAsync(query);
 
             return Ok(mimeType);
         }

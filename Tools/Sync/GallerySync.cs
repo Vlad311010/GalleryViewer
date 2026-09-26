@@ -305,7 +305,8 @@ namespace Tools.Sync
 
         private async Task ProcessAssetAsync(AssetSyncData assetSyncData, IAssetsService assetsService, IPreviewCreationService previewCreator, IPersistenceService persistenceService)
         {
-            if (await assetsService.ExistsAsync(assetSyncData.GalleryId, assetSyncData.AssetRelativePath))
+            AssetExistsQuery query = new(assetSyncData.GalleryId, assetSyncData.AssetRelativePath);
+            if (await assetsService.ExistsAsync(query))
             {
                 logger.Debug(
                     "Skipping existing asset {AssetPath} in gallery {GalleryId}", ApplicationArea.Tools,

@@ -20,11 +20,16 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace App.Services
 {
-    public class AssetsService(AssetsCatalogContext context, IMediaAccessorService mediaAccessorService, ILogger<AssetsService> logger) : IAssetsService
+    public class AssetsService(AssetsCatalogContext context, IMediaAccessorService mediaAccessorService, TimeProvider timeProvider, ILogger<AssetsService> logger) : IAssetsService
     {
         public bool TryGetByHash(string md5Hash, [NotNullWhen(true)] out AssetDto assetDto)
         {
-            Asset? asset = context.Assets.FirstOrDefault(x => x.Hash == md5Hash);
+            ArgumentException.ThrowIfNullOrWhiteSpace(md5Hash);
+
+            Asset? asset = context.Assets
+                .AsNoTracking()
+                .FirstOrDefault(x => x.Hash == md5Hash);
+
             if (asset == null)
             {
                 assetDto = null!;
@@ -38,12 +43,13 @@ namespace App.Services
         public async Task<AssetDto?> GetByPathAsync(int galleryId, string relativePath)
         {
             Asset? asset = await context.Assets
+                .AsNoTracking()
                 .SingleOrDefaultAsync(x => x.GalleryId == galleryId && x.RelativePath == relativePath);
 
             return asset?.ToAssetDto();
         }
 
-        public async Task<AssetGroupInfoDto?> GetAssetGroupInfo(AssetGroupInfoQuery query)
+        public async Task<AssetGroupInfoDto?> GetAssetGroupInfoAsync(AssetGroupInfoQuery query)
         {
             ArgumentNullException.ThrowIfNull(query);
 
@@ -67,7 +73,7 @@ namespace App.Services
             }
         }
 
-        public async Task<AssetDto> StageCreateAssetAsync(AssetCreateCommand command)
+        public async Task StageCreateAssetAsync(AssetCreateCommand command)
         {
             ArgumentNullException.ThrowIfNull(command);
 
@@ -84,7 +90,7 @@ namespace App.Services
 
             /// As file creation time is reseted during copy, so modified time may be better source of true of when file landed in file system.
             DateTime modifiedTime = mediaAccessorService.GetLastModifiedTime(assetFilePath);
-            DateTime currentTime = DateTime.UtcNow;
+            DateTime currentTime = timeProvider.GetUtcNow().DateTime;
 
             using Stream assetData = mediaAccessorService.GetMediaData(assetFilePath);
             string hash = await Md5Hash.ComputeAsync(assetData);
@@ -102,31 +108,35 @@ namespace App.Services
                 GroupPosition = command.GroupPosition
             };
 
-            entity = (await context.Assets.AddAsync(entity)).Entity;
-
+            await context.Assets.AddAsync(entity);
             logger.Info("Created asset for {assetFilePath}", ApplicationArea.Service, assetFilePath);
-            return entity.ToAssetDto();
         }
 
         public void StageDelete(AssetDeleteCommand command)
         {
-            Asset asset = context.Assets.Local.SingleOrDefault(x => x.Id == command.Id) ?? new Asset { Id = command.Id };
+            ArgumentNullException.ThrowIfNull(command);
+
+            Asset asset = new Asset { Id = command.Id };
             context.Assets.Remove(asset);
 
             logger.Info("Asset {AssetId} deleted", ApplicationArea.Service, command.Id);
         }
 
-        public async Task<bool> ExistsAsync(int galleryId, string relativePath)
+        public async Task<bool> ExistsAsync(AssetExistsQuery query)
         {
+            ArgumentNullException.ThrowIfNull(query);
+
+            await new AssetExistsQueryValidator().ValidateAndThrowAsync(query);
+
             return await context.Assets
                 .AnyAsync(x =>
-                    x.GalleryId == galleryId
-                    && x.RelativePath == relativePath
+                    x.GalleryId == query.GalleryId
+                    && x.RelativePath == query.RelativePath
                 );
         }
 
 
-        public async Task<AssetTagsDto> GetAssetTags(AssetTagsQuery query)
+        public async Task<AssetTagsDto> GetAssetTagsAsync(AssetTagsQuery query)
         {
             ArgumentNullException.ThrowIfNull(query);
 
@@ -164,7 +174,7 @@ namespace App.Services
         }
 
 
-        public async Task AddTags(AssetAddTagsCommand command)
+        public async Task AddTagsAsync(AssetAddTagsCommand command)
         {
             ArgumentNullException.ThrowIfNull(command);
 
@@ -215,7 +225,7 @@ namespace App.Services
             await context.SaveChangesAsync();
         }
 
-        public async Task RemoveTag(AssetRemoveTagCommand command)
+        public async Task RemoveTagAsync(AssetRemoveTagCommand command)
         {
             ArgumentNullException.ThrowIfNull(command);
 
@@ -268,7 +278,6 @@ namespace App.Services
                 previousBatchLastId = batch[^1].Id;
                 yield return batch;
             }
-
         }
     }
 }

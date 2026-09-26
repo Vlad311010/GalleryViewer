@@ -27,7 +27,7 @@ namespace App.Mappers
                 asset.Id,
                 asset.GroupId,
                 asset.GroupPosition,
-                groupAssets
+                groupAssets ?? []
             );
         }
 

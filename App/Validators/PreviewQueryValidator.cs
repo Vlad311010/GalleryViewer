@@ -3,9 +3,9 @@ using FluentValidation;
 
 namespace App.Validators
 {
-    internal class MediaQueryValidator : AbstractValidator<MediaQuery>
+    internal class PreviewQueryValidator : AbstractValidator<PreviewQuery>
     {
-        public MediaQueryValidator()
+        public PreviewQueryValidator()
         {
             RuleFor(x => x.ItemId).EntityId();
 

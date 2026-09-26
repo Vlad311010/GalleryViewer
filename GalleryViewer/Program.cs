@@ -57,6 +57,7 @@ builder.Services.AddTransient<ITagsService, TagsServices>();
 builder.Services.AddTransient<IGalleriesService, GalleriesService>();
 builder.Services.AddTransient<IGroupsService, GroupsService>();
 builder.Services.AddTransient<IMediaAccessorService, FileSystemMediaAccessorService>();
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 
 
 // API contract

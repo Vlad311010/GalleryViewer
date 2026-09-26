@@ -51,10 +51,12 @@ namespace App.Validators
         {
             return rule
                 .Must(path =>
-                    path != null &&
-                    !path.StartsWith('/') &&
-                    !Path.IsPathRooted(path) &&
-                    !path.Split('/').Any(x => x == ".."))
+                    string.IsNullOrEmpty(path) || (
+                        !path.StartsWith('/') &&
+                        !path.Contains(':') &&
+                        !Path.IsPathRooted(path) &&
+                        !path.Split('/').Any(x => x == ".."))
+                    )
                 .WithMessage("Path must be a valid relative path.");
         }
 
@@ -62,10 +64,11 @@ namespace App.Validators
         {
             return rule
                 .Must(path =>
-                    path != null &&
-                    !path.Contains('\0') &&
-                    (path.StartsWith('/') ||
-                     Regex.IsMatch(path, @"^[A-Za-z]:[\\/]")))
+                    string.IsNullOrEmpty(path) || (
+                        !path.Contains('\0') &&
+                        (path.StartsWith('/') ||
+                         Regex.IsMatch(path, @"^[A-Za-z]:[\\/]")))
+                    )
                 .WithMessage("Path must be an absolute path.");
         }
     }

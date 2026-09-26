@@ -4,6 +4,6 @@
         int AssetId,
         int? GroupId,
         int? GroupPosition,
-        IReadOnlyList<int> groupAssets
+        IReadOnlyList<int> GroupAssets
     );
 }

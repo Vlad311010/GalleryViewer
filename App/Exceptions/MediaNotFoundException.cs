@@ -2,11 +2,11 @@
 {
     public class MediaNotFoundException : AppException
     {
-        public string? MeadiaPath { get; }
+        public string? MediaPath { get; }
 
         public MediaNotFoundException(string message, string? mediaPath) : base(message)
         {
-            MeadiaPath = mediaPath;
+            MediaPath = mediaPath;
         }
     }
 }
