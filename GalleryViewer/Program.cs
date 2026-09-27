@@ -53,7 +53,7 @@ builder.Services.AddDbContext<AssetsCatalogContext>(options =>
 builder.Services.AddTransient<IAssetsService, AssetsService>();
 builder.Services.AddTransient<IAssetsFilterService, FilterService>();
 builder.Services.AddTransient<IMediaService, MediaService>();
-builder.Services.AddTransient<ITagsService, TagsServices>();
+builder.Services.AddTransient<ITagsService, TagsService>();
 builder.Services.AddTransient<IGalleriesService, GalleriesService>();
 builder.Services.AddTransient<IGroupsService, GroupsService>();
 builder.Services.AddTransient<IMediaAccessorService, FileSystemMediaAccessorService>();

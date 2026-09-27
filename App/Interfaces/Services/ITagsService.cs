@@ -9,7 +9,7 @@ namespace App.Interfaces.Services
     public interface ITagsService
     {
         Task<TagDtoInfo> Create(CreateTagCommand createTagCommand);
-        Task<TagDto> Get(int id);
+        Task<TagDto> GetAsync(int id);
         Task<PagedData<TagDtoInfo>> ListAsync(Pagination pagination);
         Task<IEnumerable<TagDtoSearch>> SearchAsync(TagSearchQuery query);
     }

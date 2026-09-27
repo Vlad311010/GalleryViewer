@@ -18,9 +18,9 @@ using Shared.Models;
 
 namespace App.Services
 {
-    public class TagsServices(AssetsCatalogContext context, ILogger<TagsServices> logger) : ITagsService
+    public class TagsService(AssetsCatalogContext context, ILogger<TagsService> logger) : ITagsService
     {
-        public async Task<TagDto> Get(int id)
+        public async Task<TagDto> GetAsync(int id)
         {
             Tag? entity = await context.Tags.FindAsync(id);
             EntityNotFoundException<Tag>.ThrowIfNull(entity, id);
