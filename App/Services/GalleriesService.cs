@@ -16,7 +16,7 @@ namespace App.Services
 {
     public class GalleriesService(AssetsCatalogContext context, ILogger<GalleriesService> logger) : IGalleriesService
     {
-        public async Task<GalleryDto> Create(GalleryCreateCommand command)
+        public async Task<GalleryDto> CreateAsync(GalleryCreateCommand command)
         {
             ArgumentNullException.ThrowIfNull(command);
 
@@ -28,7 +28,7 @@ namespace App.Services
                 Path = command.Path
             };
 
-            Gallery createdEntity = (await context.Galleries.AddAsync(entity)).Entity;
+            await context.Galleries.AddAsync(entity);
             await context.SaveChangesAsync();
 
             logger.Info(
@@ -37,7 +37,7 @@ namespace App.Services
                 entity.Name,
                 entity.Path);
 
-            return new GalleryDto(createdEntity.Id, createdEntity.Name, createdEntity.Path, createdEntity.CoverSourceId);
+            return new GalleryDto(entity.Id, entity.Name, entity.Path, entity.CoverSourceId);
         }
 
         public async Task<GalleryDto?> GetByNameAsync(GalleryByNameQuery query)
@@ -62,7 +62,6 @@ namespace App.Services
         {
             Gallery? entity = await context.Galleries.FindAsync(galleryId);
             EntityNotFoundException<Gallery>.ThrowIfNull(entity, galleryId);
-
 
             entity.CoverSourceId = coverSourceId;
         }

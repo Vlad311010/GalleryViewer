@@ -96,7 +96,7 @@ namespace Tools.Sync
                 {
                     isNewGallery = true;
                     GalleryCreateCommand galleryCreate = new GalleryCreateCommand(galleryConfigData.Name, galleryConfigData.Path);
-                    gallery = await syncScope.Galleries.Create(galleryCreate);
+                    gallery = await syncScope.Galleries.CreateAsync(galleryCreate);
 
                     ProgressUpdate(new SyncEvent(
                         SyncEventType.GalleryCreated,

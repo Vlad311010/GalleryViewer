@@ -6,7 +6,7 @@ namespace App.Interfaces.Services
 {
     public interface IGalleriesService
     {
-        Task<GalleryDto> Create(GalleryCreateCommand command);
+        Task<GalleryDto> CreateAsync(GalleryCreateCommand command);
         Task<GalleryDto?> GetByNameAsync(GalleryByNameQuery query);
         Task<IEnumerable<GalleryDto>> ListAsync();
         Task StageUpdatePreviewAssetAsync(int galleryId, int coverSourceId);

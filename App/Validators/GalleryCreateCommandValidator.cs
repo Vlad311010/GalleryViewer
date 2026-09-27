@@ -8,7 +8,8 @@ namespace App.Validators
         public GalleryCreateCommandValidator()
         {
             RuleFor(x => x.Name).NotEmpty();
-            RuleFor(x => x.Path).NotEmpty();
+
+            RuleFor(x => x.Path).NotEmpty().AbsolutePath();
         }
     }
 }
