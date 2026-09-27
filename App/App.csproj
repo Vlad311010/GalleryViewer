@@ -22,4 +22,8 @@
     <PackageReference Include="SixLabors.ImageSharp" />
   </ItemGroup>
 
+  <ItemGroup>
+	<InternalsVisibleTo Include="App.UnitTests" />
+  </ItemGroup>
+
 </Project>

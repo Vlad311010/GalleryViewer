@@ -95,7 +95,7 @@ namespace App.Services
             );
         }
 
-        private async Task<ResolvedTags> ResolveTagFiltersAsync(TagFilters tagFilters)
+        internal async Task<ResolvedTags> ResolveTagFiltersAsync(TagFilters tagFilters)
         {
             string[] tags = tagFilters.Tags
                 .Concat(tagFilters.ExcludeTags)
@@ -131,7 +131,7 @@ namespace App.Services
             return new(includeTagIds, excludeTagIds);
         }
 
-        private IQueryable<Asset> ApplyTagFilters(IQueryable<Asset> query, ResolvedTags tags)
+        internal IQueryable<Asset> ApplyTagFilters(IQueryable<Asset> query, ResolvedTags tags)
         {
             if (tags.IncludeTagIds.Length + tags.ExcludeTagIds.Length > 0)
             {
@@ -223,7 +223,7 @@ namespace App.Services
 
         private record DisplayItemKey(int Id, bool IsGroup, DateTime CreationTime);
 
-        private record ResolvedTags(
+        internal record ResolvedTags(
             int[] IncludeTagIds,
             int[] ExcludeTagIds
         );
